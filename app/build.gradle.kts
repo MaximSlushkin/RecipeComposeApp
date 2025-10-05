@@ -31,13 +31,15 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        jvmToolchain(17)
     }
+
     buildFeatures {
         compose = true
     }
 
+    @Suppress("UnstableApiUsage")
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.15"
     }
