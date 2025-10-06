@@ -23,14 +23,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.yourcompany.recipecomposeapp.ui.theme.RecipeComposeAppTheme
+import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            RecipeComposeAppTheme {
+            RecipesAppTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
@@ -61,7 +61,7 @@ fun DemoText() {
 @Preview(showBackground = true)
 @Composable
 fun DemoTextPreview() {
-    RecipeComposeAppTheme {
+    RecipesAppTheme {
         Scaffold(
             modifier = Modifier.fillMaxSize()
         ) { innerPadding ->
@@ -81,7 +81,7 @@ fun DemoTextPreview() {
 @Preview(showBackground = true)
 @Composable
 fun TypographyPreview() {
-    RecipeComposeAppTheme {
+    RecipesAppTheme {
         Column(modifier = Modifier.padding(16.dp)) {
             Text("Заголовок экрана", style = MaterialTheme.typography.displayLarge)
             Spacer(modifier = Modifier.height(16.dp))
