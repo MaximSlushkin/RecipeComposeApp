@@ -1,8 +1,9 @@
-package com.yourcompany.recipecomposeapp
+package com.yourcompany.recipecomposeapp.ui.theme
 
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import com.yourcompany.recipecomposeapp.R
 
 val montserratAlternatesFontFamily = FontFamily(
     Font(R.font.montserratalternates_regular, FontWeight.Normal),
