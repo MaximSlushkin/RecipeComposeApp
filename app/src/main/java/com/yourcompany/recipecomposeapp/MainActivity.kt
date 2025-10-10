@@ -30,68 +30,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            RecipesAppTheme {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize()
-                ) { innerPadding ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                            .background(Color.LightGray),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        DemoText()
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DemoText() {
-    Text(
-        text = "Изучение Kotlin & JetpackCompose через практику",
-        textAlign = TextAlign.Center
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DemoTextPreview() {
-    RecipesAppTheme {
-        Scaffold(
-            modifier = Modifier.fillMaxSize()
-        ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                DemoText()
-            }
+            RecipesApp()
         }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun TypographyPreview() {
-    RecipesAppTheme {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Заголовок экрана", style = MaterialTheme.typography.displayLarge)
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Заголовок карточки", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Основной текст", style = MaterialTheme.typography.bodyMedium)
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Мелкий текст", style = MaterialTheme.typography.bodySmall)
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Интерактивный текст", style = MaterialTheme.typography.labelLarge)
-        }
-    }
+fun RecipeComposeAppPreview() {
+    RecipesApp()
 }
