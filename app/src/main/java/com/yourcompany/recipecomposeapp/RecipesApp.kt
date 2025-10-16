@@ -43,17 +43,19 @@ fun RecipesApp() {
 @Composable
 private fun Categories(modifier: Modifier) {
     Box(
-        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(text = "Категории", modifier = modifier)
+        Text(text = "Категории")
     }
 }
 
 @Composable
 private fun Favorites(modifier: Modifier) {
     Box(
-        modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(text = "Избранное", modifier = modifier)
+        Text(text = "Избранное")
     }
 }
