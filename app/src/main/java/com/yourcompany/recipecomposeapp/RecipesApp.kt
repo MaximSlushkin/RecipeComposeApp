@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.yourcompany.recipecomposeapp.core.ui.categories.CategoriesScreen
 import com.yourcompany.recipecomposeapp.core.ui.navigation.BottomNavigation
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 
@@ -28,11 +29,11 @@ fun RecipesApp() {
         }
         ) { innerPadding ->
             when (state) {
-                ScreenId.CATEGORIES -> Categories(
+                ScreenId.CATEGORIES -> CategoriesScreen(
                     modifier = Modifier.padding(innerPadding)
                 )
 
-                ScreenId.FAVORITES -> Favorites(
+                ScreenId.FAVORITES -> FavoritesScreen(
                     modifier = Modifier.padding(innerPadding)
                 )
             }
@@ -41,17 +42,7 @@ fun RecipesApp() {
 }
 
 @Composable
-private fun Categories(modifier: Modifier) {
-    Box(
-        modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text = "Категории")
-    }
-}
-
-@Composable
-private fun Favorites(modifier: Modifier) {
+private fun FavoritesScreen(modifier: Modifier) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
