@@ -73,7 +73,7 @@ fun CategoriesContent() {
 }
 
 @Composable
-fun CategoriesScreen(modifier: Modifier) {
+fun CategoriesScreen() {
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
