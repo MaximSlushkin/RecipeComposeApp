@@ -13,7 +13,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.yourcompany.recipecomposeapp.core.ui.categories.CategoriesScreen
+import com.yourcompany.recipecomposeapp.core.ui.favorites.FavoritesScreen
 import com.yourcompany.recipecomposeapp.core.ui.navigation.BottomNavigation
+import com.yourcompany.recipecomposeapp.core.ui.recipes.RecipesScreen
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 
 @Composable
@@ -25,6 +27,7 @@ fun RecipesApp() {
             BottomNavigation(
                 onCategoriesClick = { state = ScreenId.CATEGORIES },
                 onFavoritesClick = { state = ScreenId.FAVORITES },
+                onRecipesClick = { state = ScreenId.RECIPES },
             )
         }
         ) { innerPadding ->
@@ -36,17 +39,11 @@ fun RecipesApp() {
                 ScreenId.FAVORITES -> FavoritesScreen(
                     modifier = Modifier.padding(innerPadding)
                 )
+
+                ScreenId.RECIPES -> RecipesScreen(
+                    modifier = Modifier.padding(innerPadding)
+                )
             }
         }
-    }
-}
-
-@Composable
-private fun FavoritesScreen(modifier: Modifier) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(text = "Избранное")
     }
 }

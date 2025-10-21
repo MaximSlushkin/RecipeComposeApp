@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 fun BottomNavigation(
     onCategoriesClick: () -> Unit,
     onFavoritesClick: () -> Unit,
+    onRecipesClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -29,6 +30,9 @@ fun BottomNavigation(
         }
         Button(onClick = onFavoritesClick, modifier = Modifier.padding(16.dp)) {
             Text("Избранное")
+        }
+        Button(onClick = onRecipesClick, modifier = Modifier.padding(16.dp)) {
+            Text("Рецепты")
         }
     }
 }
