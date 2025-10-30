@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">RecipeComposeApp</string>
+    <string name="categories_title">Категории</string>
+    <string name="open_category">Открыть категорию</string>
 </resources>
