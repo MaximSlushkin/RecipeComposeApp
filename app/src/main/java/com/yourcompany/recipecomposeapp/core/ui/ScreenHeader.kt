@@ -43,7 +43,7 @@ fun ScreenHeader(header: String, imageRes: Int, modifier: Modifier = Modifier) {
                 .wrapContentHeight()
                 .padding(dimensionResource(R.dimen.mainPadding)),
             shape = RoundedCornerShape(
-                dimensionResource(R.dimen.mainPadding)
+                dimensionResource(R.dimen.halfBasicCornerRadius)
             ),
             color = MaterialTheme.colorScheme.background,
         ) {
