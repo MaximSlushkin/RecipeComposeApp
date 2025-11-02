@@ -5,7 +5,7 @@ import androidx.compose.ui.graphics.Color
 // RecipeComposeApp Light Theme
 
 // Main
-val PrimaryColor = Color(0xFF5F3678) // Categories
+val PrimaryColor = Color(0xFF525DC0) // Categories
 val AccentColor = Color(0xFFE13E3E) // Favorites
 val AccentBlue = Color(0xFF525DC0) // Portion progress bar
 

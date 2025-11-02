@@ -1,5 +1,6 @@
 package com.yourcompany.recipecomposeapp.core.ui.categories
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,7 +21,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 import com.yourcompany.recipecomposeapp.R
 
 @Composable
@@ -30,9 +30,9 @@ fun CategoryItem(
     description: String,
     onClick: () -> Unit,
 ) {
-    RecipesAppTheme {
         Card(
             modifier = Modifier
+                .clickable { onClick() }
                 .height(220.dp)
                 .width(156.dp),
             shape = RoundedCornerShape(
@@ -75,7 +75,6 @@ fun CategoryItem(
                 )
             }
         }
-    }
 }
 
 @Preview(showBackground = true)
@@ -86,5 +85,6 @@ fun CategoryItemPreview() {
         imageRes = imageRes,
         header = "Бургеры",
         description = "Рецепты всех популярных видов бургеров",
-    ) {}
+        onClick = {}
+    )
 }

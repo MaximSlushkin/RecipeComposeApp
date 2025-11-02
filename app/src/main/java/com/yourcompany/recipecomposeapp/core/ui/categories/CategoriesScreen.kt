@@ -2,7 +2,6 @@ package com.yourcompany.recipecomposeapp.core.ui.categories
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,18 +13,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
-import com.yourcompany.recipecomposeapp.data.model.CategoryDto
+import com.yourcompany.recipecomposeapp.data.model.CategoryUiModel
+import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
-import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 
 @Composable
-fun CategoriesScreen(modifier: Modifier, categories: List<CategoryDto>) {
+fun CategoriesScreen(
+    modifier: Modifier,
+    categories: List<CategoryUiModel>,
+    onCategoryClick: (Int, String) -> Unit = { _, _ -> }
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -53,7 +55,9 @@ fun CategoriesScreen(modifier: Modifier, categories: List<CategoryDto>) {
                     imageRes = category.imageUrl,
                     header = category.title,
                     description = category.description,
-                ) { }
+                ) {
+                    onCategoryClick(category.id, category.title)
+                }
             }
         }
     }
@@ -62,11 +66,9 @@ fun CategoriesScreen(modifier: Modifier, categories: List<CategoryDto>) {
 @Preview(showBackground = true)
 @Composable
 fun CategoriesScreenPreview() {
-    RecipesAppTheme {
-        Scaffold() { innerPadding ->
-            val modifier = Modifier.padding(innerPadding)
-            val categories = RecipesRepositoryStub.getCategories()
-            CategoriesScreen(modifier, categories)
-        }
+    Scaffold() { innerPadding ->
+        val modifier = Modifier.padding(innerPadding)
+        val categories = RecipesRepositoryStub.getCategories().map { it.toUiModel() }
+        CategoriesScreen(modifier, categories)
     }
 }

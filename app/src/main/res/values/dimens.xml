@@ -3,11 +3,10 @@
 
     <dimen name="headerPadding">10dp</dimen>
     <dimen name="mainPadding">16dp</dimen>
-
     <dimen name="halfPadding">8dp</dimen>
     <dimen name="quarterBasicPadding">4dp</dimen>
-
     <dimen name="halfBasicCornerRadius">8dp</dimen>
     <dimen name="cardPadding">8dp</dimen>
+    <dimen name="basicCornerRadius">8dp</dimen>
 
 </resources>
