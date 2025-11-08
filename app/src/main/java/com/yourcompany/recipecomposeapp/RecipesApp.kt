@@ -8,9 +8,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.yourcompany.recipecomposeapp.core.ui.categories.CategoriesScreen
 import com.yourcompany.recipecomposeapp.core.ui.favorites.FavoritesScreen
 import com.yourcompany.recipecomposeapp.core.ui.navigation.BottomNavigation
+import com.yourcompany.recipecomposeapp.core.ui.navigation.Destination
 import com.yourcompany.recipecomposeapp.core.ui.recipes.RecipesScreen
 import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
@@ -19,69 +23,73 @@ import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 @Composable
 fun RecipesApp() {
     RecipesAppTheme {
-        var currentScreen by remember { mutableStateOf(ScreenId.CATEGORIES) }
-
-        var selectedCategoryId by remember { mutableStateOf<Int?>(null) }
-
-        var selectedCategoryTitle by remember { mutableStateOf<String?>(null) }
+        val navController = rememberNavController()
 
         Scaffold(bottomBar = {
             BottomNavigation(
+                navController = navController,
                 onCategoriesClick = {
-                    currentScreen = ScreenId.CATEGORIES
-                    selectedCategoryId = null
-                    selectedCategoryTitle = null
+                    navController.navigate(Destination.Categories.route) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 },
                 onFavoritesClick = {
-                    currentScreen = ScreenId.FAVORITES
+                    navController.navigate(Destination.Favorites.route) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 },
             )
         }
         ) { innerPadding ->
-            when (currentScreen) {
-                ScreenId.CATEGORIES -> {
+            NavHost(
+                navController = navController,
+                startDestination = Destination.Categories.route,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable(Destination.Categories.route) {
                     val categories = RecipesRepositoryStub
                         .getCategories()
                         .map { it.toUiModel() }
+
                     CategoriesScreen(
-                        modifier = Modifier.padding(innerPadding),
+                        modifier = Modifier,
                         categories = categories,
                         onCategoryClick = { categoryId, categoryTitle ->
-                            selectedCategoryId = categoryId
-                            selectedCategoryTitle = categoryTitle
-                            currentScreen = ScreenId.RECIPES
+                            navController.navigate(Destination.Recipes.createRoute(categoryId))
                         }
                     )
                 }
 
-                ScreenId.FAVORITES -> FavoritesScreen(
-                    modifier = Modifier.padding(innerPadding)
-                )
+                composable(Destination.Favorites.route) {
+                    FavoritesScreen(
+                        modifier = Modifier
+                    )
+                }
 
-                ScreenId.RECIPES -> {
-                    if (selectedCategoryId != null && selectedCategoryTitle != null) {
-                        RecipesScreen(
-                            categoryId = selectedCategoryId!!,
-                            categoryTitle = selectedCategoryTitle!!,
-                            modifier = Modifier.padding(innerPadding),
-                            onRecipeClick = { recipeId ->
+                composable(
+                    route = Destination.Recipes.route,
+                    arguments = Destination.Recipes.arguments
+                ) { backStackEntry ->
+                    val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: -1
+                    val categories = RecipesRepositoryStub.getCategories()
+                    val categoryTitle = categories.find { it.id == categoryId }?.title ?: "Рецепты"
 
-                            }
-                        )
-                    } else {
-                        val categories = RecipesRepositoryStub
-                            .getCategories()
-                            .map { it.toUiModel() }
-                        CategoriesScreen(
-                            modifier = Modifier.padding(innerPadding),
-                            categories = categories,
-                            onCategoryClick = { categoryId, categoryTitle ->
-                                selectedCategoryId = categoryId
-                                selectedCategoryTitle = categoryTitle
-                                currentScreen = ScreenId.RECIPES
-                            }
-                        )
-                    }
+                    RecipesScreen(
+                        categoryId = categoryId,
+                        categoryTitle = categoryTitle,
+                        modifier = Modifier,
+                        onRecipeClick = { recipeId ->
+                            // TODO: Будущая реализация перехода на рецепт
+                        }
+                    )
                 }
             }
         }
