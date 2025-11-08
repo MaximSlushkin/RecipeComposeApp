@@ -19,5 +19,5 @@ fun RecipeDto.toUiModel() = RecipeUiModel(
     imageUrl = if (imageUrl.startsWith("http")) imageUrl else Constants.ASSETS_URI_PREFIX + imageUrl,
     ingredients = ingredients.map { it.toUiModel() },
     method = method,
-    isFavorite = false
+    isFavorite = false,
 )

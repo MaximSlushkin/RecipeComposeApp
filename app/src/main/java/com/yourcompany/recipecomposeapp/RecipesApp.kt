@@ -12,28 +12,45 @@ import com.yourcompany.recipecomposeapp.core.ui.categories.CategoriesScreen
 import com.yourcompany.recipecomposeapp.core.ui.favorites.FavoritesScreen
 import com.yourcompany.recipecomposeapp.core.ui.navigation.BottomNavigation
 import com.yourcompany.recipecomposeapp.core.ui.recipes.RecipesScreen
+import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 
 @Composable
 fun RecipesApp() {
-    RecipesAppTheme(
-    ) {
-        var state by remember { mutableStateOf(ScreenId.CATEGORIES) }
+    RecipesAppTheme {
+        var currentScreen by remember { mutableStateOf(ScreenId.CATEGORIES) }
+
+        var selectedCategoryId by remember { mutableStateOf<Int?>(null) }
+
+        var selectedCategoryTitle by remember { mutableStateOf<String?>(null) }
+
         Scaffold(bottomBar = {
             BottomNavigation(
-                onCategoriesClick = { state = ScreenId.CATEGORIES },
-                onFavoritesClick = { state = ScreenId.FAVORITES },
-                onRecipesClick = { state = ScreenId.RECIPES },
+                onCategoriesClick = {
+                    currentScreen = ScreenId.CATEGORIES
+                    selectedCategoryId = null
+                    selectedCategoryTitle = null
+                },
+                onFavoritesClick = {
+                    currentScreen = ScreenId.FAVORITES
+                },
             )
         }
         ) { innerPadding ->
-            when (state) {
+            when (currentScreen) {
                 ScreenId.CATEGORIES -> {
-                    val categories = RecipesRepositoryStub.getCategories()
+                    val categories = RecipesRepositoryStub
+                        .getCategories()
+                        .map { it.toUiModel() }
                     CategoriesScreen(
                         modifier = Modifier.padding(innerPadding),
-                        categories = categories
+                        categories = categories,
+                        onCategoryClick = { categoryId, categoryTitle ->
+                            selectedCategoryId = categoryId
+                            selectedCategoryTitle = categoryTitle
+                            currentScreen = ScreenId.RECIPES
+                        }
                     )
                 }
 
@@ -41,9 +58,31 @@ fun RecipesApp() {
                     modifier = Modifier.padding(innerPadding)
                 )
 
-                ScreenId.RECIPES -> RecipesScreen(
-                    modifier = Modifier.padding(innerPadding)
-                )
+                ScreenId.RECIPES -> {
+                    if (selectedCategoryId != null && selectedCategoryTitle != null) {
+                        RecipesScreen(
+                            categoryId = selectedCategoryId!!,
+                            categoryTitle = selectedCategoryTitle!!,
+                            modifier = Modifier.padding(innerPadding),
+                            onRecipeClick = { recipeId ->
+
+                            }
+                        )
+                    } else {
+                        val categories = RecipesRepositoryStub
+                            .getCategories()
+                            .map { it.toUiModel() }
+                        CategoriesScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            categories = categories,
+                            onCategoryClick = { categoryId, categoryTitle ->
+                                selectedCategoryId = categoryId
+                                selectedCategoryTitle = categoryTitle
+                                currentScreen = ScreenId.RECIPES
+                            }
+                        )
+                    }
+                }
             }
         }
     }
