@@ -21,15 +21,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.yourcompany.recipecomposeapp.core.ui.navigation.Destination
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.ui.theme.AccentColor
 import com.yourcompany.recipecomposeapp.ui.theme.PrimaryColor
 
 @Composable
 fun BottomNavigation(
+    navController: NavController,
     onCategoriesClick: () -> Unit,
     onFavoritesClick: () -> Unit,
 ) {
+    val currentBackStackEntry = navController.currentBackStackEntryAsState()
+    val currentDestination = currentBackStackEntry.value?.destination
+    val currentRoute = currentDestination?.route
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -53,7 +61,11 @@ fun BottomNavigation(
                     .height(36.dp),
                 shape = RoundedCornerShape(dimensionResource(R.dimen.basicCornerRadius)),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryColor
+                    containerColor = if (currentRoute == Destination.Categories.route) {
+                        PrimaryColor
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    }
                 )
             ) {
                 Text(
@@ -70,7 +82,11 @@ fun BottomNavigation(
                     .padding(start = 4.dp),
                 shape = RoundedCornerShape(dimensionResource(R.dimen.basicCornerRadius)),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = AccentColor
+                    containerColor = if (currentRoute == Destination.Favorites.route) {
+                        AccentColor
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    }
                 )
             ) {
                 Row(
