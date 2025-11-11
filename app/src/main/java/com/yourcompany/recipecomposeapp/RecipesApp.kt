@@ -1,23 +1,29 @@
 package com.yourcompany.recipecomposeapp
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.yourcompany.recipecomposeapp.Constants.KEY_RECIPE_OBJECT
 import com.yourcompany.recipecomposeapp.core.ui.categories.CategoriesScreen
 import com.yourcompany.recipecomposeapp.core.ui.favorites.FavoritesScreen
 import com.yourcompany.recipecomposeapp.core.ui.navigation.BottomNavigation
 import com.yourcompany.recipecomposeapp.core.ui.navigation.Destination
 import com.yourcompany.recipecomposeapp.core.ui.recipes.RecipesScreen
+import com.yourcompany.recipecomposeapp.data.model.RecipeUiModel
 import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
+import com.yourcompany.recipecomposeapp.features.details.ui.RecipeDetailsScreen
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 
 @Composable
@@ -88,10 +94,45 @@ fun RecipesApp() {
                         categoryId = categoryId,
                         categoryTitle = categoryTitle,
                         modifier = Modifier,
-                        onRecipeClick = { recipeId ->
-                            // TODO: Будущая реализация перехода на рецепт
+                        onRecipeClick = { recipeId, recipe ->
+                            navController.currentBackStackEntry?.savedStateHandle?.set(
+                                KEY_RECIPE_OBJECT,
+                                recipe
+                            )
+                            navController.navigate(Destination.RecipeDetail.createRoute(recipeId))
                         }
                     )
+                }
+
+                composable(
+                    route = Destination.RecipeDetail.route,
+                    arguments = Destination.RecipeDetail.arguments
+                ) { backStackEntry ->
+                    val recipeId = backStackEntry.arguments?.getInt("recipeId") ?: -1
+
+                    val recipe = navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.get<RecipeUiModel>(KEY_RECIPE_OBJECT)
+
+                    if (recipe != null) {
+                        RecipeDetailsScreen(
+                            recipe = recipe,
+                            modifier = Modifier
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Рецепт не найден",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                    }
                 }
             }
         }

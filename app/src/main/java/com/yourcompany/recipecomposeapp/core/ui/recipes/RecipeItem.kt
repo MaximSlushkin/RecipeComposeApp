@@ -25,13 +25,13 @@ import com.yourcompany.recipecomposeapp.data.model.RecipeUiModel
 @Composable
 fun RecipeItem(
     recipe: RecipeUiModel,
-    onClick: (Int) -> Unit,
+    onClick: (Int, RecipeUiModel) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick(recipe.id) },
+            .clickable { onClick(recipe.id, recipe) },
         shape = RoundedCornerShape(
             size = dimensionResource(R.dimen.basicCornerRadius)
         ),
@@ -83,6 +83,6 @@ fun RecipeItemPreview() {
 
     RecipeItem(
         recipe = recipe,
-        onClick = {}
+        onClick = { recipeId, recipe -> }
     )
 }

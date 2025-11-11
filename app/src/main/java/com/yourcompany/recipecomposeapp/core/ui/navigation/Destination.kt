@@ -3,6 +3,7 @@ package com.yourcompany.recipecomposeapp.core.ui.navigation
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 
+
 sealed class Destination(
     val route: String,
     val title: String = ""
@@ -36,7 +37,7 @@ sealed class Destination(
 
     object RecipeDetail : Destination(
         route = "recipe/{recipeId}",
-        title = "Рецепт"
+        title = "Детали рецепта"
     ) {
         fun createRoute(recipeId: Int): String {
             return "recipe/$recipeId"

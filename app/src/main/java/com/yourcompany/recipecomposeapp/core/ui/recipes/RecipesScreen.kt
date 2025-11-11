@@ -35,14 +35,14 @@ fun RecipesScreen(
     categoryId: Int,
     categoryTitle: String,
     modifier: Modifier = Modifier,
-    onRecipeClick: (Int) -> Unit = {}
+    onRecipeClick: (Int, RecipeUiModel) -> Unit = { _, _ -> }
 ) {
     var recipes by remember { mutableStateOf<List<RecipeUiModel>>(emptyList()) }
 
     var isLoading by remember { mutableStateOf(false) }
 
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    
+
     LaunchedEffect(key1 = categoryId) {
         isLoading = true
         errorMessage = null
@@ -94,7 +94,7 @@ fun RecipesScreen(
 @Composable
 private fun RecipesList(
     recipes: List<RecipeUiModel>,
-    onRecipeClick: (Int) -> Unit
+    onRecipeClick: (Int, RecipeUiModel) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -113,7 +113,7 @@ private fun RecipesList(
         ) { recipe ->
             RecipeItem(
                 recipe = recipe,
-                onClick = onRecipeClick,
+                onClick = { recipeId, recipeObj -> onRecipeClick(recipeId, recipeObj) },
                 modifier = Modifier.fillMaxWidth()
             )
         }
