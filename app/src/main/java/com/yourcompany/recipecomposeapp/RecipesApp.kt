@@ -55,9 +55,11 @@ fun RecipesApp() {
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(Destination.Categories.route) {
-                    val categories = RecipesRepositoryStub
-                        .getCategories()
-                        .map { it.toUiModel() }
+                    val categories = remember {
+                        RecipesRepositoryStub
+                            .getCategories()
+                            .map { it.toUiModel() }
+                    }
 
                     CategoriesScreen(
                         modifier = Modifier,
@@ -79,7 +81,7 @@ fun RecipesApp() {
                     arguments = Destination.Recipes.arguments
                 ) { backStackEntry ->
                     val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: -1
-                    val categories = RecipesRepositoryStub.getCategories()
+                    val categories = remember { RecipesRepositoryStub.getCategories() }
                     val categoryTitle = categories.find { it.id == categoryId }?.title ?: "Рецепты"
 
                     RecipesScreen(

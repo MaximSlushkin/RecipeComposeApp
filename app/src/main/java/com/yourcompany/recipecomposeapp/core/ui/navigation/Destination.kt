@@ -28,7 +28,7 @@ sealed class Destination(
 
         val arguments = listOf(
             navArgument("categoryId") {
-                type = NavType.Companion.IntType
+                type = NavType.IntType
                 defaultValue = -1
             }
         )
@@ -44,7 +44,7 @@ sealed class Destination(
 
         val arguments = listOf(
             navArgument("recipeId") {
-                type = NavType.Companion.IntType
+                type = NavType.IntType
                 defaultValue = -1
             }
         )
