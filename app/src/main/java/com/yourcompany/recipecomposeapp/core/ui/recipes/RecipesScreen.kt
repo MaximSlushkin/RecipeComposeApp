@@ -38,9 +38,7 @@ fun RecipesScreen(
     onRecipeClick: (Int, RecipeUiModel) -> Unit = { _, _ -> }
 ) {
     var recipes by remember { mutableStateOf<List<RecipeUiModel>>(emptyList()) }
-
     var isLoading by remember { mutableStateOf(false) }
-
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(key1 = categoryId) {
@@ -49,13 +47,10 @@ fun RecipesScreen(
 
         try {
             val recipesDto = RecipesRepositoryStub.getRecipesByCategoryId(categoryId)
-
             recipes = recipesDto.map { it.toUiModel() }
         } catch (e: Exception) {
-
             errorMessage = "Не удалось загрузить рецепты: ${e.localizedMessage}"
         } finally {
-
             isLoading = false
         }
     }
@@ -114,7 +109,9 @@ private fun RecipesList(
             RecipeItem(
                 recipe = recipe,
                 onClick = { recipeId, recipeObj -> onRecipeClick(recipeId, recipeObj) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = dimensionResource(R.dimen.mainPadding))
             )
         }
     }
