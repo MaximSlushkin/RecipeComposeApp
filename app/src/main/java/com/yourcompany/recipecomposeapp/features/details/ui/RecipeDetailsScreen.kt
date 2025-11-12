@@ -8,19 +8,77 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
+import com.yourcompany.recipecomposeapp.core.ui.ingredients.IngredientItem
+import com.yourcompany.recipecomposeapp.core.ui.ingredients.InstructionItem
 import com.yourcompany.recipecomposeapp.data.model.RecipeUiModel
+import com.yourcompany.recipecomposeapp.data.model.toUiModel
+import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
 
 @Composable
 fun RecipeDetailsScreen(
+    recipeId: Int,
+    modifier: Modifier = Modifier
+) {
+    var recipe by remember { mutableStateOf<RecipeUiModel?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(key1 = recipeId) {
+        isLoading = true
+        errorMessage = null
+
+        try {
+            val allRecipes = RecipesRepositoryStub.getRecipesByCategoryId(0)
+            val foundRecipe = allRecipes.find { it.id == recipeId }?.toUiModel()
+
+            if (foundRecipe != null) {
+                recipe = foundRecipe
+            } else {
+                errorMessage = "Рецепт не найден"
+            }
+        } catch (e: Exception) {
+            errorMessage = "Ошибка загрузки: ${e.localizedMessage}"
+        } finally {
+            isLoading = false
+        }
+    }
+
+    when {
+        isLoading -> {
+            LoadingState()
+        }
+        errorMessage != null -> {
+            ErrorState(errorMessage = errorMessage!!)
+        }
+        recipe != null -> {
+            RecipeContent(recipe = recipe!!, modifier = modifier)
+        }
+        else -> {
+            EmptyState()
+        }
+    }
+}
+
+@Composable
+private fun RecipeContent(
     recipe: RecipeUiModel,
     modifier: Modifier = Modifier
 ) {
@@ -40,11 +98,10 @@ fun RecipeDetailsScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background),
             contentPadding = PaddingValues(
-                vertical = dimensionResource(R.dimen.mainPadding),
-                horizontal = dimensionResource(R.dimen.mainPadding)
+                vertical = dimensionResource(R.dimen.mainPadding)
             ),
             verticalArrangement = Arrangement.spacedBy(
-                dimensionResource(R.dimen.mainPadding)
+                dimensionResource(R.dimen.cardPadding)
             )
         ) {
             item {
@@ -52,17 +109,18 @@ fun RecipeDetailsScreen(
                     text = "Ингредиенты",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(
+                        horizontal = dimensionResource(R.dimen.mainPadding)
+                    )
                 )
             }
 
             items(recipe.ingredients) { ingredient ->
-                Text(
-                    text = "• ${ingredient.name} - ${ingredient.amount}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
+                IngredientItem(
+                    ingredient = ingredient,
                     modifier = Modifier.padding(
-                        vertical = dimensionResource(R.dimen.cardPadding)
+                        horizontal = dimensionResource(R.dimen.mainPadding)
                     )
                 )
             }
@@ -73,17 +131,18 @@ fun RecipeDetailsScreen(
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = dimensionResource(R.dimen.mainPadding))
+                    modifier = Modifier.padding(
+                        horizontal = dimensionResource(R.dimen.mainPadding),
+                        vertical = dimensionResource(R.dimen.mainPadding)
+                    )
                 )
             }
 
             items(recipe.method) { step ->
-                Text(
-                    text = step,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
+                InstructionItem(
+                    step = step,
                     modifier = Modifier.padding(
-                        vertical = dimensionResource(R.dimen.cardPadding)
+                        horizontal = dimensionResource(R.dimen.mainPadding)
                     )
                 )
             }
@@ -91,7 +150,64 @@ fun RecipeDetailsScreen(
     }
 }
 
-@Preview(showBackground = true)
+@Composable
+private fun LoadingState() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(dimensionResource(R.dimen.mainPadding)),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        CircularProgressIndicator()
+        Text(
+            text = "Загрузка рецепта...",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+    }
+}
+
+@Composable
+private fun ErrorState(errorMessage: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(dimensionResource(R.dimen.mainPadding)),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = errorMessage,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun EmptyState() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(dimensionResource(R.dimen.mainPadding)),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Рецепт не найден",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Recipe Details Loaded")
 @Composable
 fun RecipeDetailsScreenPreview() {
     val sampleRecipe = RecipeUiModel(
@@ -100,15 +216,29 @@ fun RecipeDetailsScreenPreview() {
         imageUrl = "",
         ingredients = listOf(
             com.yourcompany.recipecomposeapp.data.model.IngredientUiModel("Говяжий фарш", "500 г"),
-            com.yourcompany.recipecomposeapp.data.model.IngredientUiModel("Булочка", "1 шт"),
-            com.yourcompany.recipecomposeapp.data.model.IngredientUiModel("Сыр", "2 ломтика")
+            com.yourcompany.recipecomposeapp.data.model.IngredientUiModel("Булочка для бургера", "4 шт"),
+            com.yourcompany.recipecomposeapp.data.model.IngredientUiModel("Сыр Чеддер", "200 г"),
+            com.yourcompany.recipecomposeapp.data.model.IngredientUiModel("Помидор", "1 шт")
         ),
         method = listOf(
             "1. Сформируйте котлеты из фарша",
-            "2. Обжарьте котлеты на сковороде",
-            "3. Соберите бургер"
+            "2. Обжарьте котлеты на сковороде до золотистой корочки",
+            "3. Поджарьте булочки на гриле",
+            "4. Соберите бургер: булочка, котлета, сыр, овощи"
         )
     )
 
-    RecipeDetailsScreen(recipe = sampleRecipe)
+    RecipeContent(recipe = sampleRecipe)
+}
+
+@Preview(showBackground = true, name = "Recipe Details Loading")
+@Composable
+fun RecipeDetailsScreenLoadingPreview() {
+    LoadingState()
+}
+
+@Preview(showBackground = true, name = "Recipe Details Error")
+@Composable
+fun RecipeDetailsScreenErrorPreview() {
+    ErrorState(errorMessage = "Рецепт не найден")
 }
