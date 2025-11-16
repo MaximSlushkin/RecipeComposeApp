@@ -41,4 +41,10 @@ val recipesAppTypography = Typography(
         fontWeight = FontWeight.SemiBold,
         fontSize = 14.sp,
     ),
+    headlineSmall = TextStyle(
+        fontFamily = montserratAlternatesFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 18.sp,
+    ),
+
 )

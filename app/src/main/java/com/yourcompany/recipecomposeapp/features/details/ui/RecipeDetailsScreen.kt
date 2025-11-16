@@ -20,7 +20,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -28,9 +27,12 @@ import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
 import com.yourcompany.recipecomposeapp.core.ui.ingredients.IngredientItem
 import com.yourcompany.recipecomposeapp.core.ui.ingredients.InstructionItem
+import com.yourcompany.recipecomposeapp.core.ui.ingredients.PortionsSlider
+import com.yourcompany.recipecomposeapp.data.model.IngredientUiModel
 import com.yourcompany.recipecomposeapp.data.model.RecipeUiModel
 import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
+import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 
 @Composable
 fun RecipeDetailsScreen(
@@ -40,6 +42,7 @@ fun RecipeDetailsScreen(
     var recipe by remember { mutableStateOf<RecipeUiModel?>(null) }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var currentPortions by remember { mutableStateOf(1) }
 
     LaunchedEffect(key1 = recipeId) {
         isLoading = true
@@ -69,7 +72,12 @@ fun RecipeDetailsScreen(
             ErrorState(errorMessage = errorMessage!!)
         }
         recipe != null -> {
-            RecipeContent(recipe = recipe!!, modifier = modifier)
+            RecipeContent(
+                recipe = recipe!!,
+                currentPortions = currentPortions,
+                onPortionsChanged = { newPortions -> currentPortions = newPortions },
+                modifier = modifier
+            )
         }
         else -> {
             EmptyState()
@@ -80,8 +88,14 @@ fun RecipeDetailsScreen(
 @Composable
 private fun RecipeContent(
     recipe: RecipeUiModel,
+    currentPortions: Int,
+    onPortionsChanged: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val multiplier = remember(currentPortions) {
+        currentPortions.toFloat()
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -106,19 +120,29 @@ private fun RecipeContent(
         ) {
             item {
                 Text(
-                    text = "Ингредиенты",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
+                    text = "Ингредиенты".uppercase(),
+                    style = MaterialTheme.typography.displayLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(
                         horizontal = dimensionResource(R.dimen.mainPadding)
                     )
                 )
             }
 
+            item {
+                PortionsSlider(
+                    currentPortions = currentPortions,
+                    onPortionsChanged = onPortionsChanged
+                )
+            }
+
             items(recipe.ingredients) { ingredient ->
+                val adjustedIngredient = remember(ingredient, multiplier) {
+                    adjustIngredientForPortions(ingredient, multiplier)
+                }
+
                 IngredientItem(
-                    ingredient = ingredient,
+                    ingredient = adjustedIngredient,
                     modifier = Modifier.padding(
                         horizontal = dimensionResource(R.dimen.mainPadding)
                     )
@@ -127,10 +151,9 @@ private fun RecipeContent(
 
             item {
                 Text(
-                    text = "Способ приготовления",
+                    text = "Способ приготовления".uppercase(),
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(
                         horizontal = dimensionResource(R.dimen.mainPadding),
                         vertical = dimensionResource(R.dimen.mainPadding)
@@ -147,6 +170,58 @@ private fun RecipeContent(
                 )
             }
         }
+    }
+}
+
+private fun adjustIngredientForPortions(
+    ingredient: IngredientUiModel,
+    multiplier: Float
+): IngredientUiModel {
+    return try {
+        val originalAmount = ingredient.amount
+
+        val (numberPart, unitPart) = parseAmount(originalAmount)
+
+        if (numberPart != null) {
+            val adjustedNumber = numberPart * multiplier
+            val formattedAmount = formatAdjustedAmount(adjustedNumber, unitPart)
+
+            ingredient.copy(amount = formattedAmount)
+        } else {
+            ingredient
+        }
+    } catch (e: Exception) {
+        ingredient
+    }
+}
+
+private fun parseAmount(amount: String): Pair<Float?, String> {
+    val trimmedAmount = amount.trim()
+
+    val numberRegex = """^([\d.,]+)\s*(.*)""".toRegex()
+    val matchResult = numberRegex.find(trimmedAmount)
+
+    return if (matchResult != null) {
+        val numberStr = matchResult.groupValues[1].replace(',', '.')
+        val unit = matchResult.groupValues[2].trim()
+
+        try {
+            numberStr.toFloat() to unit
+        } catch (e: NumberFormatException) {
+            null to trimmedAmount
+        }
+    } else {
+        null to trimmedAmount
+    }
+}
+
+private fun formatAdjustedAmount(amount: Float, unit: String): String {
+    return if (amount == amount.toInt().toFloat()) {
+
+        "${amount.toInt()} $unit".trim()
+    } else {
+
+        "${"%.1f".format(amount)} $unit".trim()
     }
 }
 
@@ -215,10 +290,12 @@ fun RecipeDetailsScreenPreview() {
         title = "Классический бургер",
         imageUrl = "",
         ingredients = listOf(
-            com.yourcompany.recipecomposeapp.data.model.IngredientUiModel("Говяжий фарш", "500 г"),
-            com.yourcompany.recipecomposeapp.data.model.IngredientUiModel("Булочка для бургера", "4 шт"),
-            com.yourcompany.recipecomposeapp.data.model.IngredientUiModel("Сыр Чеддер", "200 г"),
-            com.yourcompany.recipecomposeapp.data.model.IngredientUiModel("Помидор", "1 шт")
+            IngredientUiModel("Говяжий фарш", "500 г"),
+            IngredientUiModel("Булочка для бургера", "4 шт"),
+            IngredientUiModel("Сыр Чеддер", "200 г"),
+            IngredientUiModel("Помидор", "1 шт"),
+            IngredientUiModel("Оливковое масло", "2 ст. л."),
+            IngredientUiModel("Соль и перец", "по вкусу")
         ),
         method = listOf(
             "1. Сформируйте котлеты из фарша",
@@ -228,17 +305,11 @@ fun RecipeDetailsScreenPreview() {
         )
     )
 
-    RecipeContent(recipe = sampleRecipe)
-}
-
-@Preview(showBackground = true, name = "Recipe Details Loading")
-@Composable
-fun RecipeDetailsScreenLoadingPreview() {
-    LoadingState()
-}
-
-@Preview(showBackground = true, name = "Recipe Details Error")
-@Composable
-fun RecipeDetailsScreenErrorPreview() {
-    ErrorState(errorMessage = "Рецепт не найден")
+    RecipesAppTheme {
+        RecipeContent(
+            recipe = sampleRecipe,
+            currentPortions = 4,
+            onPortionsChanged = { }
+        )
+    }
 }

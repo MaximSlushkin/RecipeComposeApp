@@ -27,7 +27,7 @@ fun InstructionItem(
         Text(
             text = step,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(
                 vertical = dimensionResource(R.dimen.cardPadding)
             )

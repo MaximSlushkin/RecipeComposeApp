@@ -21,6 +21,8 @@ val DividerColor = Color(0xFFF5F5F5) // Dividers
 // Text
 val TextPrimaryColor = Color(0xFF000000) // Primary
 val TextSecondaryColor = Color(0xFF666666) // Secondary
+val HeadersColor = Color(0xFF5F3678) // Headers color from design
+
 
 // RecipeComposeApp Dark Theme
 
@@ -39,3 +41,4 @@ val SurfaceColorDark = Color(0xFF1E1E1E) // Cards
 // Text
 val TextPrimaryColorDark = Color(0xFFE6E6E6) // Primary
 val TextSecondaryColorDark = Color(0xFFB0B0B0) // Secondary
+val HeadersColorDark = Color(0xFFB39DDB)

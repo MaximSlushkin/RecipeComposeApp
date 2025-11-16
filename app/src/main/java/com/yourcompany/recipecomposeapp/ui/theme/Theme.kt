@@ -21,6 +21,9 @@ private val RecipesAppLightColorScheme = lightColorScheme(
     outlineVariant = DividerColor,
     onPrimary = TextPrimaryColor,
     onSecondary = TextSecondaryColor,
+    onSurface = HeadersColor,
+    onSurfaceVariant = TextSecondaryColor,
+
 )
 
 private val RecipesAppDarkColorScheme = darkColorScheme(
@@ -32,6 +35,8 @@ private val RecipesAppDarkColorScheme = darkColorScheme(
     surface = SurfaceColorDark,
     onPrimary = TextPrimaryColorDark,
     onSecondary = TextSecondaryColorDark,
+    onSurface = HeadersColorDark,
+    onSurfaceVariant = TextSecondaryColorDark,
 )
 
 @Composable
