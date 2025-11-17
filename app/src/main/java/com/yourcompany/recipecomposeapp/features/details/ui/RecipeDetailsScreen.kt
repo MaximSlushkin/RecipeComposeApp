@@ -92,8 +92,8 @@ private fun RecipeContent(
     onPortionsChanged: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val multiplier = remember(currentPortions) {
-        currentPortions.toFloat()
+    val multiplier = remember(currentPortions, recipe.servings) {
+        currentPortions.toFloat() / recipe.servings.toFloat()
     }
 
     Column(
@@ -121,7 +121,7 @@ private fun RecipeContent(
             item {
                 Text(
                     text = "Ингредиенты".uppercase(),
-                    style = MaterialTheme.typography.displayLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(
                         horizontal = dimensionResource(R.dimen.mainPadding)
@@ -132,7 +132,8 @@ private fun RecipeContent(
             item {
                 PortionsSlider(
                     currentPortions = currentPortions,
-                    onPortionsChanged = onPortionsChanged
+                    onPortionsChanged = onPortionsChanged,
+                    defaultPortions = recipe.servings
                 )
             }
 

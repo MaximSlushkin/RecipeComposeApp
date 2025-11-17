@@ -7,7 +7,6 @@ import androidx.compose.ui.graphics.Color
 // Main
 val PrimaryColor = Color(0xFF525DC0) // Categories
 val AccentColor = Color(0xFFE13E3E) // Favorites
-val AccentBlue = Color(0xFF525DC0) // Portion progress bar
 
 // Slider
 val SliderTrackColor = Color(0xFFA1A9F9)
