@@ -1,16 +1,13 @@
 package com.yourcompany.recipecomposeapp
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import android.content.Intent
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -23,11 +20,34 @@ import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
 import com.yourcompany.recipecomposeapp.features.details.ui.RecipeDetailsScreen
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
+import kotlinx.coroutines.delay
 
 @Composable
-fun RecipesApp() {
+fun RecipesApp(deepLinkIntent: Intent? = null) {
     RecipesAppTheme {
         val navController = rememberNavController()
+        val context = LocalContext.current
+
+        LaunchedEffect(deepLinkIntent) {
+            deepLinkIntent?.data?.let { uri ->
+                val recipeId = parseRecipeIdFromUri(uri.toString())
+
+                if (recipeId != null) {
+
+                    delay(100)
+
+                    navController.navigate(
+                        Destination.RecipeDetail.createRoute(recipeId)
+                    ) {
+
+                        popUpTo(navController.graph.startDestinationId) {
+                            inclusive = false
+                        }
+                        launchSingleTop = true
+                    }
+                }
+            }
+        }
 
         Scaffold(bottomBar = {
             BottomNavigation(
@@ -102,10 +122,15 @@ fun RecipesApp() {
                     route = Destination.RecipeDetail.route,
                     arguments = Destination.RecipeDetail.arguments
                 ) { backStackEntry ->
-                    val recipeId = backStackEntry.arguments?.getInt("recipeId") ?: -1
+                    val recipeId = backStackEntry.arguments?.getInt(Constants.PARAM_RECIPE_ID) ?: -1
+
+                    val recipe = remember(recipeId) {
+                        getRecipeById(recipeId)?.toUiModel()
+                    }
 
                     RecipeDetailsScreen(
                         recipeId = recipeId,
+                        recipe = recipe,
                         modifier = Modifier
                     )
                 }
@@ -113,3 +138,39 @@ fun RecipesApp() {
         }
     }
 }
+
+/**
+ * Парсит ID рецепта из URI Deep Link
+ */
+private fun parseRecipeIdFromUri(uriString: String): Int? {
+    return try {
+        when {
+            uriString.startsWith("recipeapp://") -> {
+
+                val path = uriString.removePrefix("recipeapp://")
+                if (path.startsWith("recipe/")) {
+                    path.removePrefix("recipe/").toIntOrNull()
+                } else {
+                    null
+                }
+            }
+            uriString.startsWith("https://recipes.androidsprint.ru/recipe/") -> {
+
+                uriString.removePrefix("https://recipes.androidsprint.ru/recipe/").toIntOrNull()
+            }
+            else -> null
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+/**
+ * Вспомогательная функция для поиска рецепта по ID во всех категориях
+ */
+private fun getRecipeById(recipeId: Int) = RecipesRepositoryStub
+    .getCategories()
+    .flatMap { category ->
+        RecipesRepositoryStub.getRecipesByCategoryId(category.id)
+    }
+    .find { it.id == recipeId }

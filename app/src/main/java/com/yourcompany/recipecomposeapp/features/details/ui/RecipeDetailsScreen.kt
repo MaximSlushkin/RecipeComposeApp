@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,34 +34,47 @@ import com.yourcompany.recipecomposeapp.data.model.RecipeUiModel
 import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
+import com.yourcompany.recipecomposeapp.utils.ShareUtils
 
 @Composable
 fun RecipeDetailsScreen(
     recipeId: Int,
+    recipe: RecipeUiModel? = null,
     modifier: Modifier = Modifier
 ) {
-    var recipe by remember { mutableStateOf<RecipeUiModel?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
+    var currentRecipe by remember { mutableStateOf(recipe) }
+    var isLoading by remember { mutableStateOf(recipe == null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var currentPortions by remember { mutableStateOf(1) }
+    val context = LocalContext.current
 
     LaunchedEffect(key1 = recipeId) {
-        isLoading = true
-        errorMessage = null
+        if (recipe == null) {
+            isLoading = true
+            errorMessage = null
 
-        try {
-            val allRecipes = RecipesRepositoryStub.getRecipesByCategoryId(0)
-            val foundRecipe = allRecipes.find { it.id == recipeId }?.toUiModel()
+            try {
 
-            if (foundRecipe != null) {
-                recipe = foundRecipe
-                currentPortions = foundRecipe.servings
-            } else {
-                errorMessage = "Рецепт не найден"
+                val allRecipes = RecipesRepositoryStub.getCategories().flatMap { category ->
+                    RecipesRepositoryStub.getRecipesByCategoryId(category.id)
+                }
+                val foundRecipe = allRecipes.find { it.id == recipeId }?.toUiModel()
+
+                if (foundRecipe != null) {
+                    currentRecipe = foundRecipe
+                    currentPortions = foundRecipe.servings
+                } else {
+                    errorMessage = "Рецепт не найден"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Ошибка загрузки: ${e.localizedMessage}"
+            } finally {
+                isLoading = false
             }
-        } catch (e: Exception) {
-            errorMessage = "Ошибка загрузки: ${e.localizedMessage}"
-        } finally {
+        } else {
+
+            currentRecipe = recipe
+            currentPortions = recipe.servings
             isLoading = false
         }
     }
@@ -72,11 +86,14 @@ fun RecipeDetailsScreen(
         errorMessage != null -> {
             ErrorState(errorMessage = errorMessage!!)
         }
-        recipe != null -> {
+        currentRecipe != null -> {
             RecipeContent(
-                recipe = recipe!!,
+                recipe = currentRecipe!!,
                 currentPortions = currentPortions,
                 onPortionsChanged = { newPortions -> currentPortions = newPortions },
+                onShareClick = {
+                    ShareUtils.shareRecipe(context, currentRecipe!!.id, currentRecipe!!.title)
+                },
                 modifier = modifier
             )
         }
@@ -91,6 +108,7 @@ private fun RecipeContent(
     recipe: RecipeUiModel,
     currentPortions: Int,
     onPortionsChanged: (Int) -> Unit,
+    onShareClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val multiplier = remember(currentPortions, recipe.servings) {
@@ -105,6 +123,8 @@ private fun RecipeContent(
         ScreenHeader(
             header = recipe.title,
             imageRes = R.drawable.bcg_categories,
+            showShareButton = true,
+            onShareClick = onShareClick,
             modifier = Modifier
         )
 
@@ -218,10 +238,8 @@ private fun parseAmount(amount: String): Pair<Float?, String> {
 
 private fun formatAdjustedAmount(amount: Float, unit: String): String {
     return if (amount == amount.toInt().toFloat()) {
-
         "${amount.toInt()} $unit".trim()
     } else {
-
         "${"%.1f".format(amount)} $unit".trim()
     }
 }
@@ -303,14 +321,32 @@ fun RecipeDetailsScreenPreview() {
             "2. Обжарьте котлеты на сковороде до золотистой корочки",
             "3. Поджарьте булочки на гриле",
             "4. Соберите бургер: булочка, котлета, сыр, овощи"
-        )
+        ),
+        servings = 4
     )
 
     RecipesAppTheme {
         RecipeContent(
             recipe = sampleRecipe,
             currentPortions = 4,
-            onPortionsChanged = { }
+            onPortionsChanged = { },
+            onShareClick = { }
         )
+    }
+}
+
+@Preview(showBackground = true, name = "Recipe Details Loading")
+@Composable
+fun RecipeDetailsScreenLoadingPreview() {
+    RecipesAppTheme {
+        LoadingState()
+    }
+}
+
+@Preview(showBackground = true, name = "Recipe Details Error")
+@Composable
+fun RecipeDetailsScreenErrorPreview() {
+    RecipesAppTheme {
+        ErrorState(errorMessage = "Ошибка загрузки рецепта")
     }
 }
