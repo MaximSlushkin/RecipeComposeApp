@@ -69,7 +69,7 @@ fun CategoryItem(
                             bottom = dimensionResource(R.dimen.cardPadding)
                         )
                         .height(50.dp),
-                    color = MaterialTheme.colorScheme.onSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall,
                     textAlign = TextAlign.Start,
                 )

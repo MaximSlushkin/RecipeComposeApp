@@ -7,4 +7,5 @@ data class RecipeDto(
     val method: List<String>,
     val imageUrl: String,
     val categoryIds: List<Int> = emptyList(),
+    val servings: Int = 1,
 )
