@@ -50,7 +50,7 @@ fun ScreenHeader(header: String, imageRes: Int, modifier: Modifier = Modifier) {
             Text(
                 text = header.uppercase(),
                 modifier = Modifier.padding(dimensionResource(R.dimen.headerPadding)),
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.displayLarge,
                 textAlign = TextAlign.Center,
             )

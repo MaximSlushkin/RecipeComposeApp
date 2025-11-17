@@ -5,10 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -20,13 +18,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.yourcompany.recipecomposeapp.core.ui.navigation.Destination
+import androidx.navigation.compose.rememberNavController
 import com.yourcompany.recipecomposeapp.R
-import com.yourcompany.recipecomposeapp.ui.theme.AccentColor
-import com.yourcompany.recipecomposeapp.ui.theme.PrimaryColor
+import com.yourcompany.recipecomposeapp.core.ui.navigation.Destination
+import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 
 @Composable
 fun BottomNavigation(
@@ -62,15 +61,21 @@ fun BottomNavigation(
                 shape = RoundedCornerShape(dimensionResource(R.dimen.basicCornerRadius)),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (currentRoute == Destination.Categories.route) {
-                        PrimaryColor
+                        MaterialTheme.colorScheme.primary
                     } else {
                         MaterialTheme.colorScheme.surfaceVariant
-                    }
+                    },
+                    contentColor = if (currentRoute == Destination.Categories.route) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                 )
             ) {
                 Text(
                     text = "Категории".uppercase(),
-                    style = MaterialTheme.typography.labelMedium
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.surface
                 )
             }
 
@@ -83,9 +88,14 @@ fun BottomNavigation(
                 shape = RoundedCornerShape(dimensionResource(R.dimen.basicCornerRadius)),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (currentRoute == Destination.Favorites.route) {
-                        AccentColor
+                        MaterialTheme.colorScheme.secondary
                     } else {
                         MaterialTheme.colorScheme.surfaceVariant
+                    },
+                    contentColor = if (currentRoute == Destination.Favorites.route) {
+                        MaterialTheme.colorScheme.onSecondary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )
             ) {
@@ -95,12 +105,14 @@ fun BottomNavigation(
                 ) {
                     Text(
                         text = "Избранное".uppercase(),
-                        style = MaterialTheme.typography.labelMedium
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.surface
                     )
                     Icon(
                         painter = painterResource(R.drawable.ic_heart_empty),
                         contentDescription = "Избранное",
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
+                        tint = MaterialTheme.colorScheme.surface
                     )
                 }
             }

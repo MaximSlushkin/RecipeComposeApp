@@ -54,6 +54,7 @@ fun RecipeDetailsScreen(
 
             if (foundRecipe != null) {
                 recipe = foundRecipe
+                currentPortions = foundRecipe.servings
             } else {
                 errorMessage = "Рецепт не найден"
             }
@@ -133,7 +134,6 @@ private fun RecipeContent(
                 PortionsSlider(
                     currentPortions = currentPortions,
                     onPortionsChanged = onPortionsChanged,
-                    defaultPortions = recipe.servings
                 )
             }
 

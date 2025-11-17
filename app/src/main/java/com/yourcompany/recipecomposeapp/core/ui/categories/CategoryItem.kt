@@ -55,7 +55,7 @@ fun CategoryItem(
                 Text(
                     text = header.uppercase(),
                     modifier = Modifier.padding(dimensionResource(R.dimen.cardPadding)),
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleMedium,
                     textAlign = TextAlign.Center,
                 )
