@@ -53,7 +53,7 @@ fun ScreenHeader(
             IconButton(
                 onClick = onShareClick,
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
+                    .align(Alignment.TopStart)
                     .padding(dimensionResource(R.dimen.mainPadding))
                     .size(48.dp)
                     .clip(CircleShape)
