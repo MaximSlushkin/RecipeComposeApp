@@ -91,9 +91,11 @@ fun RecipeDetailsScreen(
         isLoading -> {
             LoadingState()
         }
+
         errorMessage != null -> {
             ErrorState(errorMessage = errorMessage!!)
         }
+
         currentRecipe != null -> {
             RecipeContent(
                 recipe = currentRecipe!!,
@@ -109,6 +111,7 @@ fun RecipeDetailsScreen(
                 modifier = modifier
             )
         }
+
         else -> {
             EmptyState()
         }

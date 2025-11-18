@@ -53,7 +53,7 @@ fun ScreenHeader(
         )
 
         if (showShareButton) {
-         
+
             Row(
                 modifier = Modifier
                     .align(Alignment.TopStart)
