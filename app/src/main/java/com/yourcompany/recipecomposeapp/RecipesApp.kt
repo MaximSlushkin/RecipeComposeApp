@@ -8,9 +8,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavDeepLink
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navDeepLink
 import com.yourcompany.recipecomposeapp.core.ui.categories.CategoriesScreen
 import com.yourcompany.recipecomposeapp.core.ui.favorites.FavoritesScreen
 import com.yourcompany.recipecomposeapp.core.ui.navigation.BottomNavigation
@@ -120,7 +122,17 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
 
                 composable(
                     route = Destination.RecipeDetail.route,
-                    arguments = Destination.RecipeDetail.arguments
+                    arguments = Destination.RecipeDetail.arguments,
+                    deepLinks = listOf(
+
+                        navDeepLink {
+                            uriPattern = "${Constants.DEEP_LINK_SCHEME}://recipe/{${Constants.PARAM_RECIPE_ID}}"
+                        },
+
+                        navDeepLink {
+                            uriPattern = "${Constants.DEEP_LINK_BASE_URL}/recipe/{${Constants.PARAM_RECIPE_ID}}"
+                        }
+                    )
                 ) { backStackEntry ->
                     val recipeId = backStackEntry.arguments?.getInt(Constants.PARAM_RECIPE_ID) ?: -1
 
@@ -139,9 +151,6 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
     }
 }
 
-/**
- * Парсит ID рецепта из URI Deep Link
- */
 private fun parseRecipeIdFromUri(uriString: String): Int? {
     return try {
         when {
@@ -165,9 +174,6 @@ private fun parseRecipeIdFromUri(uriString: String): Int? {
     }
 }
 
-/**
- * Вспомогательная функция для поиска рецепта по ID во всех категориях
- */
 private fun getRecipeById(recipeId: Int) = RecipesRepositoryStub
     .getCategories()
     .flatMap { category ->
