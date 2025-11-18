@@ -2,6 +2,7 @@ package com.yourcompany.recipecomposeapp.core.ui.navigation
 
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import com.yourcompany.recipecomposeapp.Constants
 
 
 sealed class Destination(
@@ -36,7 +37,7 @@ sealed class Destination(
     }
 
     object RecipeDetail : Destination(
-        route = "recipe/{recipeId}",
+        route = "recipe/{${Constants.PARAM_RECIPE_ID}}",
         title = "Детали рецепта"
     ) {
         fun createRoute(recipeId: Int): String {
@@ -44,7 +45,7 @@ sealed class Destination(
         }
 
         val arguments = listOf(
-            navArgument("recipeId") {
+            navArgument(Constants.PARAM_RECIPE_ID) {
                 type = NavType.IntType
                 defaultValue = -1
             }

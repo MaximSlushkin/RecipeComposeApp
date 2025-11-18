@@ -57,11 +57,11 @@ fun RecipeItem(
             )
 
             Text(
-                text = recipe.title,
+                text = recipe.title.uppercase(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(dimensionResource(R.dimen.cardPadding)),
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Start,
                 maxLines = 2
@@ -75,7 +75,7 @@ fun RecipeItem(
 fun RecipeItemPreview() {
     val recipe = RecipeUiModel(
         id = 1,
-        title = "Классический бургер с говядиной",
+        title = "Классический бургер",
         imageUrl = "",
         ingredients = emptyList(),
         method = emptyList()

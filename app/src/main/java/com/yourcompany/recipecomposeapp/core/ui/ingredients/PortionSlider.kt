@@ -31,7 +31,6 @@ import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 fun PortionsSlider(
     currentPortions: Int,
     onPortionsChanged: (Int) -> Unit,
-    defaultPortions: Int = 4,
     modifier: Modifier = Modifier,
     minPortions: Int = 1,
     maxPortions: Int = 8
@@ -59,11 +58,10 @@ fun PortionsSlider(
             value = currentPortions.toFloat(),
             onValueChange = { newValue -> onPortionsChanged(newValue.toInt()) },
             valueRange = minPortions.toFloat()..maxPortions.toFloat(),
-            steps = maxPortions - minPortions - 1,
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.tertiary,
-                inactiveTrackColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.4f)
+                activeTrackColor = MaterialTheme.colorScheme.tertiaryContainer,
+                inactiveTrackColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f)
             ),
             thumb = {
                 Box(
@@ -86,7 +84,7 @@ fun PortionsSlider(
 fun PortionsSliderPreview() {
     RecipesAppTheme {
         PortionsSlider(
-            currentPortions = 4,
+            currentPortions = 1,
             onPortionsChanged = { }
         )
     }

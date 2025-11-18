@@ -1,20 +1,25 @@
 package com.yourcompany.recipecomposeapp.core.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -24,7 +29,13 @@ import androidx.compose.ui.unit.dp
 import com.yourcompany.recipecomposeapp.R
 
 @Composable
-fun ScreenHeader(header: String, imageRes: Int, modifier: Modifier = Modifier) {
+fun ScreenHeader(
+    header: String,
+    imageRes: Int,
+    showShareButton: Boolean = false,
+    onShareClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -37,6 +48,25 @@ fun ScreenHeader(header: String, imageRes: Int, modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
+
+        if (showShareButton) {
+            IconButton(
+                onClick = onShareClick,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(dimensionResource(R.dimen.mainPadding))
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.8f))
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_share),
+                    contentDescription = "Поделиться",
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+
         Surface(
             modifier = Modifier
                 .wrapContentWidth()
@@ -50,7 +80,7 @@ fun ScreenHeader(header: String, imageRes: Int, modifier: Modifier = Modifier) {
             Text(
                 text = header.uppercase(),
                 modifier = Modifier.padding(dimensionResource(R.dimen.headerPadding)),
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.displayLarge,
                 textAlign = TextAlign.Center,
             )
@@ -64,5 +94,7 @@ private fun ScreenHeaderPreview() {
     ScreenHeader(
         header = "Категории",
         imageRes = R.drawable.bcg_categories,
+        showShareButton = true,
+        onShareClick = {}
     )
 }
