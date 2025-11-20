@@ -128,6 +128,7 @@ private fun RecipeContent(
     onFavoriteToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+
     val multiplier = remember(currentPortions, recipe.servings) {
         currentPortions.toFloat() / recipe.servings.toFloat()
     }

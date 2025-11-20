@@ -53,7 +53,6 @@ fun ScreenHeader(
         )
 
         if (showShareButton) {
-
             Row(
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -78,6 +77,7 @@ fun ScreenHeader(
                     .align(Alignment.TopEnd)
                     .padding(dimensionResource(R.dimen.mainPadding))
             ) {
+
                 FavoriteButton(
                     isFavorite = isFavorite,
                     onFavoriteToggle = onFavoriteToggle,
