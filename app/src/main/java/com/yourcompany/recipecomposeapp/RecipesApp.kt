@@ -98,7 +98,10 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
 
                 composable(Destination.Favorites.route) {
                     FavoritesScreen(
-                        modifier = Modifier
+                        modifier = Modifier,
+                        onRecipeClick = { recipeId, recipe ->
+                            navController.navigate(Destination.RecipeDetail.createRoute(recipeId))
+                        }
                     )
                 }
 
