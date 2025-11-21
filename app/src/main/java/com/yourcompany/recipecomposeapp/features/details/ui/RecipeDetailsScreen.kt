@@ -48,9 +48,7 @@ fun RecipeDetailsScreen(
     var isLoading by remember { mutableStateOf(recipe == null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    var currentPortions by rememberSaveable(recipeId.toString() + "_portions") {
-        mutableStateOf(recipe?.servings ?: 1)
-    }
+    var currentPortions by rememberSaveable { mutableStateOf(recipe?.servings ?: 1) }
 
     var isFavorite by rememberSaveable(recipeId.toString() + "_favorite") {
         mutableStateOf(false)
@@ -71,7 +69,10 @@ fun RecipeDetailsScreen(
 
                 if (foundRecipe != null) {
                     currentRecipe = foundRecipe
-                    currentPortions = foundRecipe.servings
+
+                    if (currentPortions == 1) {
+                        currentPortions = foundRecipe.servings
+                    }
                 } else {
                     errorMessage = "Рецепт не найден"
                 }
@@ -82,7 +83,10 @@ fun RecipeDetailsScreen(
             }
         } else {
             currentRecipe = recipe
-            currentPortions = recipe.servings
+
+            if (currentPortions == 1) {
+                currentPortions = recipe.servings
+            }
             isLoading = false
         }
     }
