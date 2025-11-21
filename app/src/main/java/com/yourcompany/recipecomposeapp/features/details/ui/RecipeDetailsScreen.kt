@@ -13,9 +13,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +47,13 @@ fun RecipeDetailsScreen(
     var currentRecipe by remember { mutableStateOf(recipe) }
     var isLoading by remember { mutableStateOf(recipe == null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var currentPortions by remember { mutableStateOf(1) }
+
+    var currentPortions by rememberSaveable { mutableStateOf(recipe?.servings ?: 1) }
+
+    var isFavorite by rememberSaveable(recipeId.toString() + "_favorite") {
+        mutableStateOf(false)
+    }
+
     val context = LocalContext.current
 
     LaunchedEffect(key1 = recipeId) {
@@ -54,7 +62,6 @@ fun RecipeDetailsScreen(
             errorMessage = null
 
             try {
-
                 val allRecipes = RecipesRepositoryStub.getCategories().flatMap { category ->
                     RecipesRepositoryStub.getRecipesByCategoryId(category.id)
                 }
@@ -62,7 +69,10 @@ fun RecipeDetailsScreen(
 
                 if (foundRecipe != null) {
                     currentRecipe = foundRecipe
-                    currentPortions = foundRecipe.servings
+
+                    if (currentPortions == 1) {
+                        currentPortions = foundRecipe.servings
+                    }
                 } else {
                     errorMessage = "Рецепт не найден"
                 }
@@ -72,9 +82,11 @@ fun RecipeDetailsScreen(
                 isLoading = false
             }
         } else {
-
             currentRecipe = recipe
-            currentPortions = recipe.servings
+
+            if (currentPortions == 1) {
+                currentPortions = recipe.servings
+            }
             isLoading = false
         }
     }
@@ -83,9 +95,11 @@ fun RecipeDetailsScreen(
         isLoading -> {
             LoadingState()
         }
+
         errorMessage != null -> {
             ErrorState(errorMessage = errorMessage!!)
         }
+
         currentRecipe != null -> {
             RecipeContent(
                 recipe = currentRecipe!!,
@@ -94,9 +108,14 @@ fun RecipeDetailsScreen(
                 onShareClick = {
                     ShareUtils.shareRecipe(context, currentRecipe!!.id, currentRecipe!!.title)
                 },
+                isFavorite = isFavorite,
+                onFavoriteToggle = {
+                    isFavorite = !isFavorite
+                },
                 modifier = modifier
             )
         }
+
         else -> {
             EmptyState()
         }
@@ -109,10 +128,21 @@ private fun RecipeContent(
     currentPortions: Int,
     onPortionsChanged: (Int) -> Unit,
     onShareClick: () -> Unit,
+    isFavorite: Boolean,
+    onFavoriteToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+
     val multiplier = remember(currentPortions, recipe.servings) {
         currentPortions.toFloat() / recipe.servings.toFloat()
+    }
+
+    val adjustedIngredients by remember(recipe.ingredients, multiplier) {
+        derivedStateOf {
+            recipe.ingredients.map { ingredient ->
+                adjustIngredientForPortions(ingredient, multiplier)
+            }
+        }
     }
 
     Column(
@@ -125,6 +155,8 @@ private fun RecipeContent(
             imageRes = R.drawable.bcg_categories,
             showShareButton = true,
             onShareClick = onShareClick,
+            isFavorite = isFavorite,
+            onFavoriteToggle = onFavoriteToggle,
             modifier = Modifier
         )
 
@@ -157,13 +189,9 @@ private fun RecipeContent(
                 )
             }
 
-            items(recipe.ingredients) { ingredient ->
-                val adjustedIngredient = remember(ingredient, multiplier) {
-                    adjustIngredientForPortions(ingredient, multiplier)
-                }
-
+            items(adjustedIngredients) { ingredient ->
                 IngredientItem(
-                    ingredient = adjustedIngredient,
+                    ingredient = ingredient,
                     modifier = Modifier.padding(
                         horizontal = dimensionResource(R.dimen.mainPadding)
                     )
@@ -330,23 +358,9 @@ fun RecipeDetailsScreenPreview() {
             recipe = sampleRecipe,
             currentPortions = 4,
             onPortionsChanged = { },
-            onShareClick = { }
+            onShareClick = { },
+            isFavorite = true,
+            onFavoriteToggle = { }
         )
-    }
-}
-
-@Preview(showBackground = true, name = "Recipe Details Loading")
-@Composable
-fun RecipeDetailsScreenLoadingPreview() {
-    RecipesAppTheme {
-        LoadingState()
-    }
-}
-
-@Preview(showBackground = true, name = "Recipe Details Error")
-@Composable
-fun RecipeDetailsScreenErrorPreview() {
-    RecipesAppTheme {
-        ErrorState(errorMessage = "Ошибка загрузки рецепта")
     }
 }
