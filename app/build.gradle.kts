@@ -68,4 +68,5 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
     implementation(libs.androidx.navigation.compose)
+    implementation("androidx.datastore:datastore-preferences:1.2.0")
 }

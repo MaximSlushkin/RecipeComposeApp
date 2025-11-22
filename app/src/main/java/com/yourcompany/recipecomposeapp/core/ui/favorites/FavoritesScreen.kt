@@ -27,7 +27,6 @@ import com.yourcompany.recipecomposeapp.data.model.RecipeUiModel
 import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
-import com.yourcompany.recipecomposeapp.utils.FavoritePrefsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -37,7 +36,8 @@ fun FavoritesScreen(
     onRecipeClick: (Int, RecipeUiModel) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
-    val favoritePrefsManager = remember { FavoritePrefsManager(context) }
+
+    val favoriteManager = remember { FavoriteDataStoreManager(context) }
 
     var favoriteRecipes by remember { mutableStateOf<List<RecipeUiModel>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -48,9 +48,8 @@ fun FavoritesScreen(
         errorMessage = null
 
         try {
-
             val favorites = withContext(Dispatchers.IO) {
-                loadFavoriteRecipes(favoritePrefsManager)
+                loadFavoriteRecipes(favoriteManager)
             }
             favoriteRecipes = favorites
         } catch (e: Exception) {
@@ -110,12 +109,10 @@ fun FavoritesScreen(
     }
 }
 
-/**
- * Загружает полные данные рецептов по ID из избранного
- */
-private suspend fun loadFavoriteRecipes(favoritePrefsManager: FavoritePrefsManager): List<RecipeUiModel> {
+private suspend fun loadFavoriteRecipes(favoriteManager: FavoriteDataStoreManager): List<RecipeUiModel> {
     return withContext(Dispatchers.IO) {
-        val favoriteIds = favoritePrefsManager.getAllFavorites()
+
+        val favoriteIds = favoriteManager.getAllFavorites()
 
         if (favoriteIds.isEmpty()) {
             return@withContext emptyList()
