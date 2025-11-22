@@ -36,7 +36,10 @@ import com.yourcompany.recipecomposeapp.data.model.RecipeUiModel
 import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
+import com.yourcompany.recipecomposeapp.utils.FavoritePrefsManager
 import com.yourcompany.recipecomposeapp.utils.ShareUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun RecipeDetailsScreen(
@@ -50,11 +53,27 @@ fun RecipeDetailsScreen(
 
     var currentPortions by rememberSaveable { mutableStateOf(recipe?.servings ?: 1) }
 
-    var isFavorite by rememberSaveable(recipeId.toString() + "_favorite") {
-        mutableStateOf(false)
+    val context = LocalContext.current
+    val favoritePrefsManager = remember { FavoritePrefsManager(context) }
+
+    var isFavorite by remember(recipeId) {
+        mutableStateOf(favoritePrefsManager.isFavorite(recipeId))
     }
 
-    val context = LocalContext.current
+    var pendingFavoriteUpdate by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
+
+    LaunchedEffect(pendingFavoriteUpdate) {
+        pendingFavoriteUpdate?.let { (id, favorite) ->
+            withContext(Dispatchers.IO) {
+                if (favorite) {
+                    favoritePrefsManager.addToFavorites(id)
+                } else {
+                    favoritePrefsManager.removeFromFavorites(id)
+                }
+            }
+            pendingFavoriteUpdate = null
+        }
+    }
 
     LaunchedEffect(key1 = recipeId) {
         if (recipe == null) {
@@ -62,10 +81,13 @@ fun RecipeDetailsScreen(
             errorMessage = null
 
             try {
-                val allRecipes = RecipesRepositoryStub.getCategories().flatMap { category ->
-                    RecipesRepositoryStub.getRecipesByCategoryId(category.id)
+
+                val foundRecipe = withContext(Dispatchers.IO) {
+                    val allRecipes = RecipesRepositoryStub.getCategories().flatMap { category ->
+                        RecipesRepositoryStub.getRecipesByCategoryId(category.id)
+                    }
+                    allRecipes.find { it.id == recipeId }?.toUiModel()
                 }
-                val foundRecipe = allRecipes.find { it.id == recipeId }?.toUiModel()
 
                 if (foundRecipe != null) {
                     currentRecipe = foundRecipe
@@ -91,6 +113,13 @@ fun RecipeDetailsScreen(
         }
     }
 
+    val onFavoriteToggle = {
+
+        isFavorite = !isFavorite
+
+        pendingFavoriteUpdate = recipeId to isFavorite
+    }
+
     when {
         isLoading -> {
             LoadingState()
@@ -109,9 +138,7 @@ fun RecipeDetailsScreen(
                     ShareUtils.shareRecipe(context, currentRecipe!!.id, currentRecipe!!.title)
                 },
                 isFavorite = isFavorite,
-                onFavoriteToggle = {
-                    isFavorite = !isFavorite
-                },
+                onFavoriteToggle = onFavoriteToggle,
                 modifier = modifier
             )
         }
@@ -132,7 +159,6 @@ private fun RecipeContent(
     onFavoriteToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-
     val multiplier = remember(currentPortions, recipe.servings) {
         currentPortions.toFloat() / recipe.servings.toFloat()
     }
