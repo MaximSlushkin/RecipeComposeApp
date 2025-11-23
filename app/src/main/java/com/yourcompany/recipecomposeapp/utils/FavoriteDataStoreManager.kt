@@ -1,9 +1,7 @@
-package com.yourcompany.recipecomposeapp.core.ui.favorites
+package com.yourcompany.recipecomposeapp.utils
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
-import com.yourcompany.recipecomposeapp.data.datastore.PreferencesKeys
-import com.yourcompany.recipecomposeapp.data.datastore.dataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map

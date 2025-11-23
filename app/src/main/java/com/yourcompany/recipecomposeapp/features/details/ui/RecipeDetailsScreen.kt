@@ -29,7 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
-import com.yourcompany.recipecomposeapp.core.ui.favorites.FavoriteDataStoreManager
+import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
 import com.yourcompany.recipecomposeapp.core.ui.ingredients.IngredientItem
 import com.yourcompany.recipecomposeapp.core.ui.ingredients.InstructionItem
 import com.yourcompany.recipecomposeapp.core.ui.ingredients.PortionsSlider
@@ -68,9 +68,7 @@ fun RecipeDetailsScreen(
     LaunchedEffect(recipeId) {
         try {
 
-            val favoriteState = withContext(Dispatchers.IO) {
-                favoriteManager.isFavorite(recipeId)
-            }
+            val favoriteState = favoriteManager.isFavorite(recipeId)
             isFavorite = favoriteState
         } catch (e: Exception) {
 
@@ -124,13 +122,10 @@ fun RecipeDetailsScreen(
 
         coroutineScope.launch {
             try {
-                withContext(Dispatchers.IO) {
-
-                    if (newFavoriteState) {
-                        favoriteManager.addFavorite(recipeId)
-                    } else {
-                        favoriteManager.removeFavorite(recipeId)
-                    }
+                if (newFavoriteState) {
+                    favoriteManager.addFavorite(recipeId)
+                } else {
+                    favoriteManager.removeFavorite(recipeId)
                 }
             } catch (e: Exception) {
 

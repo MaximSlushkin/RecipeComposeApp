@@ -27,6 +27,7 @@ import com.yourcompany.recipecomposeapp.data.model.RecipeUiModel
 import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
+import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -48,9 +49,7 @@ fun FavoritesScreen(
         errorMessage = null
 
         try {
-            val favorites = withContext(Dispatchers.IO) {
-                loadFavoriteRecipes(favoriteManager)
-            }
+            val favorites = loadFavoriteRecipes(favoriteManager)
             favoriteRecipes = favorites
         } catch (e: Exception) {
             errorMessage = "Ошибка загрузки избранных рецептов: ${e.message}"
@@ -110,23 +109,19 @@ fun FavoritesScreen(
 }
 
 private suspend fun loadFavoriteRecipes(favoriteManager: FavoriteDataStoreManager): List<RecipeUiModel> {
-    return withContext(Dispatchers.IO) {
+    val favoriteIds = favoriteManager.getAllFavorites()
+    if (favoriteIds.isEmpty()) {
+        return emptyList()
+    }
 
-        val favoriteIds = favoriteManager.getAllFavorites()
+    val allRecipes = RecipesRepositoryStub.getCategories().flatMap { category ->
+        RecipesRepositoryStub.getRecipesByCategoryId(category.id)
+    }
 
-        if (favoriteIds.isEmpty()) {
-            return@withContext emptyList()
-        }
-
-        val allRecipes = RecipesRepositoryStub.getCategories().flatMap { category ->
-            RecipesRepositoryStub.getRecipesByCategoryId(category.id)
-        }
-
-        favoriteIds.mapNotNull { recipeIdStr ->
-            val recipeId = recipeIdStr.toIntOrNull()
-            recipeId?.let { id ->
-                allRecipes.find { it.id == id }?.toUiModel()
-            }
+    return favoriteIds.mapNotNull { recipeIdStr ->
+        val recipeId = recipeIdStr.toIntOrNull()
+        recipeId?.let { id ->
+            allRecipes.find { it.id == id }?.toUiModel()
         }
     }
 }

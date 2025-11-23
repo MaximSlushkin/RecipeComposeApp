@@ -1,4 +1,4 @@
-package com.yourcompany.recipecomposeapp.data.datastore
+package com.yourcompany.recipecomposeapp.utils
 
 import android.content.Context
 import androidx.datastore.core.DataStore
