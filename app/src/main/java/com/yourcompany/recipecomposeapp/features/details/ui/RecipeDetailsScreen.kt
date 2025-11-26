@@ -17,6 +17,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -28,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
+import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
 import com.yourcompany.recipecomposeapp.core.ui.ingredients.IngredientItem
 import com.yourcompany.recipecomposeapp.core.ui.ingredients.InstructionItem
 import com.yourcompany.recipecomposeapp.core.ui.ingredients.PortionsSlider
@@ -36,9 +38,9 @@ import com.yourcompany.recipecomposeapp.data.model.RecipeUiModel
 import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
-import com.yourcompany.recipecomposeapp.utils.FavoritePrefsManager
 import com.yourcompany.recipecomposeapp.utils.ShareUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Composable
@@ -54,24 +56,23 @@ fun RecipeDetailsScreen(
     var currentPortions by rememberSaveable { mutableStateOf(recipe?.servings ?: 1) }
 
     val context = LocalContext.current
-    val favoritePrefsManager = remember { FavoritePrefsManager(context) }
+    val favoriteManager = remember { FavoriteDataStoreManager(context) }
+    val coroutineScope = rememberCoroutineScope()
 
     var isFavorite by remember(recipeId) {
-        mutableStateOf(favoritePrefsManager.isFavorite(recipeId))
+        mutableStateOf(false)
     }
 
-    var pendingFavoriteUpdate by remember { mutableStateOf<Pair<Int, Boolean>?>(null) }
+    var isFavoriteOperationInProgress by remember { mutableStateOf(false) }
 
-    LaunchedEffect(pendingFavoriteUpdate) {
-        pendingFavoriteUpdate?.let { (id, favorite) ->
-            withContext(Dispatchers.IO) {
-                if (favorite) {
-                    favoritePrefsManager.addToFavorites(id)
-                } else {
-                    favoritePrefsManager.removeFromFavorites(id)
-                }
-            }
-            pendingFavoriteUpdate = null
+    LaunchedEffect(recipeId) {
+        try {
+
+            val favoriteState = favoriteManager.isFavorite(recipeId)
+            isFavorite = favoriteState
+        } catch (e: Exception) {
+
+            errorMessage = "Ошибка загрузки состояния избранного"
         }
     }
 
@@ -81,7 +82,6 @@ fun RecipeDetailsScreen(
             errorMessage = null
 
             try {
-
                 val foundRecipe = withContext(Dispatchers.IO) {
                     val allRecipes = RecipesRepositoryStub.getCategories().flatMap { category ->
                         RecipesRepositoryStub.getRecipesByCategoryId(category.id)
@@ -91,7 +91,6 @@ fun RecipeDetailsScreen(
 
                 if (foundRecipe != null) {
                     currentRecipe = foundRecipe
-
                     if (currentPortions == 1) {
                         currentPortions = foundRecipe.servings
                     }
@@ -105,7 +104,6 @@ fun RecipeDetailsScreen(
             }
         } else {
             currentRecipe = recipe
-
             if (currentPortions == 1) {
                 currentPortions = recipe.servings
             }
@@ -113,22 +111,39 @@ fun RecipeDetailsScreen(
         }
     }
 
-    val onFavoriteToggle = {
+    val onFavoriteToggle: () -> Unit = onFavoriteToggle@ {
+        if (isFavoriteOperationInProgress) {
+            return@onFavoriteToggle
+        }
 
-        isFavorite = !isFavorite
+        val newFavoriteState = !isFavorite
+        isFavorite = newFavoriteState
+        isFavoriteOperationInProgress = true
 
-        pendingFavoriteUpdate = recipeId to isFavorite
+        coroutineScope.launch {
+            try {
+                if (newFavoriteState) {
+                    favoriteManager.addFavorite(recipeId)
+                } else {
+                    favoriteManager.removeFavorite(recipeId)
+                }
+            } catch (e: Exception) {
+
+                isFavorite = !newFavoriteState
+                errorMessage = "Не удалось обновить избранное"
+            } finally {
+                isFavoriteOperationInProgress = false
+            }
+        }
     }
 
     when {
         isLoading -> {
             LoadingState()
         }
-
         errorMessage != null -> {
             ErrorState(errorMessage = errorMessage!!)
         }
-
         currentRecipe != null -> {
             RecipeContent(
                 recipe = currentRecipe!!,
@@ -142,7 +157,6 @@ fun RecipeDetailsScreen(
                 modifier = modifier
             )
         }
-
         else -> {
             EmptyState()
         }

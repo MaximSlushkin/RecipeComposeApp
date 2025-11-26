@@ -27,7 +27,7 @@ import com.yourcompany.recipecomposeapp.data.model.RecipeUiModel
 import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
-import com.yourcompany.recipecomposeapp.utils.FavoritePrefsManager
+import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -37,7 +37,8 @@ fun FavoritesScreen(
     onRecipeClick: (Int, RecipeUiModel) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
-    val favoritePrefsManager = remember { FavoritePrefsManager(context) }
+
+    val favoriteManager = remember { FavoriteDataStoreManager(context) }
 
     var favoriteRecipes by remember { mutableStateOf<List<RecipeUiModel>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -48,10 +49,7 @@ fun FavoritesScreen(
         errorMessage = null
 
         try {
-
-            val favorites = withContext(Dispatchers.IO) {
-                loadFavoriteRecipes(favoritePrefsManager)
-            }
+            val favorites = loadFavoriteRecipes(favoriteManager)
             favoriteRecipes = favorites
         } catch (e: Exception) {
             errorMessage = "Ошибка загрузки избранных рецептов: ${e.message}"
@@ -110,26 +108,20 @@ fun FavoritesScreen(
     }
 }
 
-/**
- * Загружает полные данные рецептов по ID из избранного
- */
-private suspend fun loadFavoriteRecipes(favoritePrefsManager: FavoritePrefsManager): List<RecipeUiModel> {
-    return withContext(Dispatchers.IO) {
-        val favoriteIds = favoritePrefsManager.getAllFavorites()
+private suspend fun loadFavoriteRecipes(favoriteManager: FavoriteDataStoreManager): List<RecipeUiModel> {
+    val favoriteIds = favoriteManager.getAllFavorites()
+    if (favoriteIds.isEmpty()) {
+        return emptyList()
+    }
 
-        if (favoriteIds.isEmpty()) {
-            return@withContext emptyList()
-        }
+    val allRecipes = RecipesRepositoryStub.getCategories().flatMap { category ->
+        RecipesRepositoryStub.getRecipesByCategoryId(category.id)
+    }
 
-        val allRecipes = RecipesRepositoryStub.getCategories().flatMap { category ->
-            RecipesRepositoryStub.getRecipesByCategoryId(category.id)
-        }
-
-        favoriteIds.mapNotNull { recipeIdStr ->
-            val recipeId = recipeIdStr.toIntOrNull()
-            recipeId?.let { id ->
-                allRecipes.find { it.id == id }?.toUiModel()
-            }
+    return favoriteIds.mapNotNull { recipeIdStr ->
+        val recipeId = recipeIdStr.toIntOrNull()
+        recipeId?.let { id ->
+            allRecipes.find { it.id == id }?.toUiModel()
         }
     }
 }
