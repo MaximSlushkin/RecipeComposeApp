@@ -8,14 +8,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,8 +30,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.yourcompany.recipecomposeapp.R
-import com.yourcompany.recipecomposeapp.core.ui.navigation.Destination
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
+import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
 
 @Composable
 fun BottomNavigation(
@@ -36,6 +42,12 @@ fun BottomNavigation(
     val currentBackStackEntry = navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStackEntry.value?.destination
     val currentRoute = currentDestination?.route
+
+    val context = LocalContext.current
+    val favoriteManager = remember { FavoriteDataStoreManager(context) }
+
+    val favoriteCount by favoriteManager.getFavoriteCountFlow()
+        .collectAsState(initial = 0)
 
     Column(
         modifier = Modifier
@@ -108,14 +120,42 @@ fun BottomNavigation(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.surface
                     )
-                    Icon(
-                        painter = painterResource(R.drawable.ic_heart_empty),
-                        contentDescription = "Избранное",
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.surface
-                    )
+
+                    BadgedBox(
+                        badge = {
+                            if (favoriteCount > 0) {
+                                Badge {
+                                    Text(
+                                        text = favoriteCount.toString(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSecondary
+                                    )
+                                }
+                            }
+                        }
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_heart_empty),
+                            contentDescription = "Избранное",
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.surface
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun BottomNavigationPreview() {
+    RecipesAppTheme {
+        val navController = rememberNavController()
+        BottomNavigation(
+            navController = navController,
+            onCategoriesClick = { },
+            onFavoritesClick = { }
+        )
     }
 }
