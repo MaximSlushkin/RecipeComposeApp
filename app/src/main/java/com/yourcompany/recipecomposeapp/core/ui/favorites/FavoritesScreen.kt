@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,20 +38,21 @@ fun FavoritesScreen(
     onRecipeClick: (Int, RecipeUiModel) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
-
     val favoriteManager = remember { FavoriteDataStoreManager(context) }
+
+    val favoriteIds by favoriteManager.getFavoriteIdsFlow()
+        .collectAsState(initial = emptySet())
 
     var favoriteRecipes by remember { mutableStateOf<List<RecipeUiModel>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(favoriteIds) {
         isLoading = true
         errorMessage = null
 
         try {
-            val favorites = loadFavoriteRecipes(favoriteManager)
-            favoriteRecipes = favorites
+            favoriteRecipes = loadFavoriteRecipes(favoriteIds)
         } catch (e: Exception) {
             errorMessage = "Ошибка загрузки избранных рецептов: ${e.message}"
         } finally {
@@ -78,21 +80,29 @@ fun FavoritesScreen(
                 isLoading -> {
                     CircularProgressIndicator()
                 }
+
                 errorMessage != null -> {
                     Text(
                         text = errorMessage!!,
                         color = MaterialTheme.colorScheme.error
                     )
                 }
+
                 favoriteRecipes.isEmpty() -> {
                     Text("Нет избранных рецептов")
                 }
+
                 else -> {
                     LazyColumn {
                         items(favoriteRecipes, key = { it.id }) { recipe ->
                             RecipeItem(
                                 recipe = recipe,
-                                onClick = { recipeId, recipeObj -> onRecipeClick(recipeId, recipeObj) },
+                                onClick = { recipeId, recipeObj ->
+                                    onRecipeClick(
+                                        recipeId,
+                                        recipeObj
+                                    )
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(
@@ -108,14 +118,15 @@ fun FavoritesScreen(
     }
 }
 
-private suspend fun loadFavoriteRecipes(favoriteManager: FavoriteDataStoreManager): List<RecipeUiModel> {
-    val favoriteIds = favoriteManager.getAllFavorites()
+private suspend fun loadFavoriteRecipes(favoriteIds: Set<String>): List<RecipeUiModel> {
     if (favoriteIds.isEmpty()) {
         return emptyList()
     }
 
-    val allRecipes = RecipesRepositoryStub.getCategories().flatMap { category ->
-        RecipesRepositoryStub.getRecipesByCategoryId(category.id)
+    val allRecipes = withContext(Dispatchers.IO) {
+        RecipesRepositoryStub.getCategories().flatMap { category ->
+            RecipesRepositoryStub.getRecipesByCategoryId(category.id)
+        }
     }
 
     return favoriteIds.mapNotNull { recipeIdStr ->

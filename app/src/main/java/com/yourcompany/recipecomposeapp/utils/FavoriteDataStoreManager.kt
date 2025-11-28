@@ -69,4 +69,31 @@ class FavoriteDataStoreManager(private val context: Context) {
             addFavorite(recipeId)
         }
     }
+
+
+    /**
+     * Поток всех избранных ID в виде Set<String>
+     * Основной метод для реактивной работы с избранным
+     */
+    fun getFavoriteIdsFlow(): Flow<Set<String>> = getAllFavoritesFlow()
+
+    /**
+     * Поток состояния избранного для конкретного рецепта
+     * Использует оператор map для преобразования Set<String> в Boolean
+     */
+    fun isFavoriteFlow(recipeId: Int): Flow<Boolean> {
+        return getFavoriteIdsFlow().map { favoriteIds ->
+            favoriteIds.contains(recipeId.toString())
+        }
+    }
+
+    /**
+     * Поток количества избранных рецептов
+     * Использует оператор map для преобразования Set<String> в Int (размер множества)
+     */
+    fun getFavoriteCountFlow(): Flow<Int> {
+        return getFavoriteIdsFlow().map { favoriteIds ->
+            favoriteIds.size
+        }
+    }
 }

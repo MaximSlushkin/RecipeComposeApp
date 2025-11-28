@@ -42,6 +42,7 @@ import com.yourcompany.recipecomposeapp.utils.ShareUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.runtime.collectAsState
 
 @Composable
 fun RecipeDetailsScreen(
@@ -59,22 +60,10 @@ fun RecipeDetailsScreen(
     val favoriteManager = remember { FavoriteDataStoreManager(context) }
     val coroutineScope = rememberCoroutineScope()
 
-    var isFavorite by remember(recipeId) {
-        mutableStateOf(false)
-    }
+    val isFavorite by favoriteManager.isFavoriteFlow(recipeId)
+        .collectAsState(initial = false)
 
     var isFavoriteOperationInProgress by remember { mutableStateOf(false) }
-
-    LaunchedEffect(recipeId) {
-        try {
-
-            val favoriteState = favoriteManager.isFavorite(recipeId)
-            isFavorite = favoriteState
-        } catch (e: Exception) {
-
-            errorMessage = "Ошибка загрузки состояния избранного"
-        }
-    }
 
     LaunchedEffect(key1 = recipeId) {
         if (recipe == null) {
@@ -111,25 +100,19 @@ fun RecipeDetailsScreen(
         }
     }
 
-    val onFavoriteToggle: () -> Unit = onFavoriteToggle@ {
+    val onFavoriteToggle: () -> Unit = onFavoriteToggle@{
         if (isFavoriteOperationInProgress) {
             return@onFavoriteToggle
         }
 
-        val newFavoriteState = !isFavorite
-        isFavorite = newFavoriteState
         isFavoriteOperationInProgress = true
 
         coroutineScope.launch {
             try {
-                if (newFavoriteState) {
-                    favoriteManager.addFavorite(recipeId)
-                } else {
-                    favoriteManager.removeFavorite(recipeId)
-                }
+
+                favoriteManager.toggleFavorite(recipeId)
             } catch (e: Exception) {
 
-                isFavorite = !newFavoriteState
                 errorMessage = "Не удалось обновить избранное"
             } finally {
                 isFavoriteOperationInProgress = false
@@ -141,9 +124,11 @@ fun RecipeDetailsScreen(
         isLoading -> {
             LoadingState()
         }
+
         errorMessage != null -> {
             ErrorState(errorMessage = errorMessage!!)
         }
+
         currentRecipe != null -> {
             RecipeContent(
                 recipe = currentRecipe!!,
@@ -157,6 +142,7 @@ fun RecipeDetailsScreen(
                 modifier = modifier
             )
         }
+
         else -> {
             EmptyState()
         }
