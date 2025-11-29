@@ -1,5 +1,7 @@
 package com.yourcompany.recipecomposeapp.core.ui.favorites
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,8 +23,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.yourcompany.recipecomposeapp.R
+import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
 import com.yourcompany.recipecomposeapp.core.ui.recipes.RecipeItem
 import com.yourcompany.recipecomposeapp.data.model.RecipeUiModel
 import com.yourcompany.recipecomposeapp.data.model.toUiModel
@@ -34,11 +39,11 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun FavoritesScreen(
+    favoriteManager: FavoriteDataStoreManager,
+    recipesRepository: RecipesRepositoryStub,
     modifier: Modifier = Modifier,
     onRecipeClick: (Int, RecipeUiModel) -> Unit = { _, _ -> }
 ) {
-    val context = LocalContext.current
-    val favoriteManager = remember { FavoriteDataStoreManager(context) }
 
     val favoriteIds by favoriteManager.getFavoriteIdsFlow()
         .collectAsState(initial = emptySet())
@@ -52,9 +57,10 @@ fun FavoritesScreen(
         errorMessage = null
 
         try {
-            favoriteRecipes = loadFavoriteRecipes(favoriteIds)
+
+            favoriteRecipes = loadFavoriteRecipes(favoriteIds, recipesRepository)
         } catch (e: Exception) {
-            errorMessage = "Ошибка загрузки избранных рецептов: ${e.message}"
+            errorMessage = "Не удалось загрузить избранные рецепты: ${e.message}"
         } finally {
             isLoading = false
         }
@@ -63,13 +69,12 @@ fun FavoritesScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(dimensionResource(R.dimen.mainPadding))
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        Text(
-            text = "Избранные рецепты",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(bottom = dimensionResource(R.dimen.mainPadding))
+        ScreenHeader(
+            header = "Избранное",
+            imageRes = R.drawable.bcg_categories,
+            modifier = Modifier
         )
 
         Box(
@@ -78,60 +83,136 @@ fun FavoritesScreen(
         ) {
             when {
                 isLoading -> {
-                    CircularProgressIndicator()
+                    LoadingState()
                 }
 
                 errorMessage != null -> {
-                    Text(
-                        text = errorMessage!!,
-                        color = MaterialTheme.colorScheme.error
-                    )
+                    ErrorState(errorMessage = errorMessage!!)
                 }
 
                 favoriteRecipes.isEmpty() -> {
-                    Text("Нет избранных рецептов")
+                    EmptyState()
                 }
 
                 else -> {
-                    LazyColumn {
-                        items(favoriteRecipes, key = { it.id }) { recipe ->
-                            RecipeItem(
-                                recipe = recipe,
-                                onClick = { recipeId, recipeObj ->
-                                    onRecipeClick(
-                                        recipeId,
-                                        recipeObj
-                                    )
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(
-                                        horizontal = dimensionResource(R.dimen.mainPadding),
-                                        vertical = dimensionResource(R.dimen.cardPadding) / 2
-                                    )
-                            )
-                        }
-                    }
+                    RecipesList(
+                        recipes = favoriteRecipes,
+                        onRecipeClick = onRecipeClick
+                    )
                 }
             }
         }
     }
 }
 
-private suspend fun loadFavoriteRecipes(favoriteIds: Set<String>): List<RecipeUiModel> {
+@Composable
+private fun RecipesList(
+    recipes: List<RecipeUiModel>,
+    onRecipeClick: (Int, RecipeUiModel) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            vertical = dimensionResource(R.dimen.mainPadding)
+        ),
+        verticalArrangement = Arrangement.spacedBy(
+            dimensionResource(R.dimen.cardPadding)
+        )
+    ) {
+        items(
+            items = recipes,
+            key = { it.id }
+        ) { recipe ->
+            RecipeItem(
+                recipe = recipe,
+                onClick = { recipeId, recipeObj -> onRecipeClick(recipeId, recipeObj) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = dimensionResource(R.dimen.mainPadding))
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingState() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            CircularProgressIndicator()
+            Text(
+                text = "Загрузка избранных рецептов...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
+    }
+}
+
+@Composable
+private fun ErrorState(errorMessage: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = errorMessage,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+}
+
+@Composable
+private fun EmptyState() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Здесь появятся рецепты, которые вы добавите в избранное",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+}
+
+private suspend fun loadFavoriteRecipes(
+    favoriteIds: Set<String>,
+    recipesRepository: RecipesRepositoryStub
+): List<RecipeUiModel> {
     if (favoriteIds.isEmpty()) {
         return emptyList()
     }
 
     val allRecipes = withContext(Dispatchers.IO) {
-        RecipesRepositoryStub.getCategories().flatMap { category ->
-            RecipesRepositoryStub.getRecipesByCategoryId(category.id)
+        recipesRepository.getCategories().flatMap { category ->
+            recipesRepository.getRecipesByCategoryId(category.id)
         }
     }
 
     return favoriteIds.mapNotNull { recipeIdStr ->
+
         val recipeId = recipeIdStr.toIntOrNull()
         recipeId?.let { id ->
+
             allRecipes.find { it.id == id }?.toUiModel()
         }
     }
@@ -140,7 +221,12 @@ private suspend fun loadFavoriteRecipes(favoriteIds: Set<String>): List<RecipeUi
 @Preview(showBackground = true)
 @Composable
 fun FavoritesScreenPreview() {
+    val context = LocalContext.current
     RecipesAppTheme {
-        FavoritesScreen()
+        FavoritesScreen(
+            favoriteManager = FavoriteDataStoreManager(context),
+            recipesRepository = RecipesRepositoryStub,
+            onRecipeClick = { _, _ -> }
+        )
     }
 }
