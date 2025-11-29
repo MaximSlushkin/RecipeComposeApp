@@ -22,6 +22,7 @@ import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
 import com.yourcompany.recipecomposeapp.features.details.ui.RecipeDetailsScreen
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
+import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
 import kotlinx.coroutines.delay
 
 @Composable
@@ -98,6 +99,8 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
 
                 composable(Destination.Favorites.route) {
                     FavoritesScreen(
+                        favoriteManager = FavoriteDataStoreManager(LocalContext.current),
+                        recipesRepository = RecipesRepositoryStub,
                         modifier = Modifier,
                         onRecipeClick = { recipeId, recipe ->
                             navController.navigate(Destination.RecipeDetail.createRoute(recipeId))
@@ -129,11 +132,13 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                     deepLinks = listOf(
 
                         navDeepLink {
-                            uriPattern = "${Constants.DEEP_LINK_SCHEME}://recipe/{${Constants.PARAM_RECIPE_ID}}"
+                            uriPattern =
+                                "${Constants.DEEP_LINK_SCHEME}://recipe/{${Constants.PARAM_RECIPE_ID}}"
                         },
 
                         navDeepLink {
-                            uriPattern = "${Constants.DEEP_LINK_BASE_URL}/recipe/{${Constants.PARAM_RECIPE_ID}}"
+                            uriPattern =
+                                "${Constants.DEEP_LINK_BASE_URL}/recipe/{${Constants.PARAM_RECIPE_ID}}"
                         }
                     )
                 ) { backStackEntry ->
@@ -166,10 +171,12 @@ private fun parseRecipeIdFromUri(uriString: String): Int? {
                     null
                 }
             }
+
             uriString.startsWith("https://recipes.androidsprint.ru/recipe/") -> {
 
                 uriString.removePrefix("https://recipes.androidsprint.ru/recipe/").toIntOrNull()
             }
+
             else -> null
         }
     } catch (e: Exception) {
