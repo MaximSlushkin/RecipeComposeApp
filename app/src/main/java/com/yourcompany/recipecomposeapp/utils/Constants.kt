@@ -1,8 +1,7 @@
-package com.yourcompany.recipecomposeapp
+package com.yourcompany.recipecomposeapp.utils
 
 object Constants {
     const val ASSETS_URI_PREFIX = "file:///android_asset/"
-    const val KEY_RECIPE_OBJECT = "recipe_object"
 
     const val DEEP_LINK_SCHEME = "recipeapp"
     const val DEEP_LINK_BASE_URL = "https://recipes.androidsprint.ru"

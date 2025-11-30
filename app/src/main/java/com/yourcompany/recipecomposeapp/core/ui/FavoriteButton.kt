@@ -1,4 +1,4 @@
-package com.yourcompany.recipecomposeapp.core.ui.favorites
+package com.yourcompany.recipecomposeapp.core.ui
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween

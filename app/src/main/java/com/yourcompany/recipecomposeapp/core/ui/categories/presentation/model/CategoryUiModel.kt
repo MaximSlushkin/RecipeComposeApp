@@ -1,7 +1,8 @@
-package com.yourcompany.recipecomposeapp.data.model
+package com.yourcompany.recipecomposeapp.core.ui.categories.presentation.model
 
 import androidx.compose.runtime.Immutable
-import com.yourcompany.recipecomposeapp.Constants
+import com.yourcompany.recipecomposeapp.utils.Constants
+import com.yourcompany.recipecomposeapp.data.model.CategoryDto
 
 @Immutable
 data class CategoryUiModel(

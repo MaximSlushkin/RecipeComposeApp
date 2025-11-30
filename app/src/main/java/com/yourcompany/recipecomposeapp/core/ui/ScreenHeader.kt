@@ -27,17 +27,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.yourcompany.recipecomposeapp.R
-import com.yourcompany.recipecomposeapp.core.ui.favorites.FavoriteButton
 
 @Composable
 fun ScreenHeader(
     header: String,
     imageRes: Int,
+    modifier: Modifier = Modifier,
     showShareButton: Boolean = false,
     onShareClick: () -> Unit = {},
     isFavorite: Boolean = false,
     onFavoriteToggle: () -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier

@@ -1,4 +1,4 @@
-package com.yourcompany.recipecomposeapp.core.ui.categories
+package com.yourcompany.recipecomposeapp.core.ui.categories.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -11,16 +11,15 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
-import com.yourcompany.recipecomposeapp.data.model.CategoryUiModel
-import com.yourcompany.recipecomposeapp.data.model.toUiModel
-import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
+import com.yourcompany.recipecomposeapp.core.ui.categories.presentation.model.CategoryUiModel
+import com.yourcompany.recipecomposeapp.core.ui.categories.presentation.model.toUiModel
+import com.yourcompany.recipecomposeapp.core.ui.categories.data.RecipesRepositoryStub
 
 @Composable
 fun CategoriesScreen(

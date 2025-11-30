@@ -1,4 +1,4 @@
-package com.yourcompany.recipecomposeapp.features.details.ui
+package com.yourcompany.recipecomposeapp.core.ui.recipedetails
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -33,16 +33,16 @@ import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
 import com.yourcompany.recipecomposeapp.core.ui.ingredients.IngredientItem
 import com.yourcompany.recipecomposeapp.core.ui.ingredients.InstructionItem
 import com.yourcompany.recipecomposeapp.core.ui.ingredients.PortionsSlider
-import com.yourcompany.recipecomposeapp.data.model.IngredientUiModel
-import com.yourcompany.recipecomposeapp.data.model.RecipeUiModel
-import com.yourcompany.recipecomposeapp.data.model.toUiModel
-import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
+import com.yourcompany.recipecomposeapp.core.ui.ingredients.presentation.model.IngredientUiModel
+import com.yourcompany.recipecomposeapp.core.ui.recipes.presentation.model.RecipeUiModel
+import com.yourcompany.recipecomposeapp.core.ui.categories.data.RecipesRepositoryStub
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 import com.yourcompany.recipecomposeapp.utils.ShareUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.collectAsState
+import com.yourcompany.recipecomposeapp.core.ui.recipes.presentation.model.toUiModel
 
 @Composable
 fun RecipeDetailsScreen(

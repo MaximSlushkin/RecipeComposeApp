@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.yourcompany.recipecomposeapp.R
-import com.yourcompany.recipecomposeapp.data.model.IngredientUiModel
+import com.yourcompany.recipecomposeapp.core.ui.ingredients.presentation.model.IngredientUiModel
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 
 @Composable
