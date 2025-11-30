@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,8 +35,7 @@ import com.yourcompany.recipecomposeapp.data.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.map
 
 @Composable
 fun FavoritesScreen(
@@ -44,26 +44,28 @@ fun FavoritesScreen(
     modifier: Modifier = Modifier,
     onRecipeClick: (Int, RecipeUiModel) -> Unit = { _, _ -> }
 ) {
+    val allRecipes = remember {
+        recipesRepository.getCategories().flatMap { category ->
+            recipesRepository.getRecipesByCategoryId(category.id)
+        }
+    }
 
-    val favoriteIds by favoriteManager.getFavoriteIdsFlow()
-        .collectAsState(initial = emptySet())
+    val favoriteRecipes by favoriteManager.getFavoriteIdsFlow()
+        .map { favoriteIds ->
+            favoriteIds.mapNotNull { recipeIdStr ->
+                val recipeId = recipeIdStr.toIntOrNull()
+                recipeId?.let { id ->
+                    allRecipes.find { it.id == id }?.toUiModel()
+                }
+            }
+        }
+        .collectAsState(initial = emptyList())
 
-    var favoriteRecipes by remember { mutableStateOf<List<RecipeUiModel>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(favoriteIds) {
-        isLoading = true
-        errorMessage = null
-
-        try {
-
-            favoriteRecipes = loadFavoriteRecipes(favoriteIds, recipesRepository)
-        } catch (e: Exception) {
-            errorMessage = "Не удалось загрузить избранные рецепты: ${e.message}"
-        } finally {
-            isLoading = false
-        }
+    LaunchedEffect(Unit) {
+        isLoading = false
     }
 
     Column(
@@ -85,15 +87,12 @@ fun FavoritesScreen(
                 isLoading -> {
                     LoadingState()
                 }
-
                 errorMessage != null -> {
-                    ErrorState(errorMessage = errorMessage!!)
+                    ErrorState(errorMessage = errorMessage ?: "Произошла неизвестная ошибка")
                 }
-
                 favoriteRecipes.isEmpty() -> {
                     EmptyState()
                 }
-
                 else -> {
                     RecipesList(
                         recipes = favoriteRecipes,
@@ -191,30 +190,6 @@ private fun EmptyState() {
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(16.dp)
         )
-    }
-}
-
-private suspend fun loadFavoriteRecipes(
-    favoriteIds: Set<String>,
-    recipesRepository: RecipesRepositoryStub
-): List<RecipeUiModel> {
-    if (favoriteIds.isEmpty()) {
-        return emptyList()
-    }
-
-    val allRecipes = withContext(Dispatchers.IO) {
-        recipesRepository.getCategories().flatMap { category ->
-            recipesRepository.getRecipesByCategoryId(category.id)
-        }
-    }
-
-    return favoriteIds.mapNotNull { recipeIdStr ->
-
-        val recipeId = recipeIdStr.toIntOrNull()
-        recipeId?.let { id ->
-
-            allRecipes.find { it.id == id }?.toUiModel()
-        }
     }
 }
 
