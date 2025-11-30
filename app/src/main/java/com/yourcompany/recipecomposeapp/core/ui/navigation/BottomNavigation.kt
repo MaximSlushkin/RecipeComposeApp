@@ -128,7 +128,7 @@ fun BottomNavigation(
                                     Text(
                                         text = favoriteCount.toString(),
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSecondary
+                                        color = MaterialTheme.colorScheme.surface
                                     )
                                 }
                             }
