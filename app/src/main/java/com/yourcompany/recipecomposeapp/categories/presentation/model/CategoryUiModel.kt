@@ -1,4 +1,4 @@
-package com.yourcompany.recipecomposeapp.core.ui.categories.presentation.model
+package com.yourcompany.recipecomposeapp.categories.presentation.model
 
 import androidx.compose.runtime.Immutable
 import com.yourcompany.recipecomposeapp.utils.Constants

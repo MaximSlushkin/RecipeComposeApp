@@ -1,4 +1,4 @@
-package com.yourcompany.recipecomposeapp.core.ui.recipes.ui
+package com.yourcompany.recipecomposeapp.recipes.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -20,7 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.yourcompany.recipecomposeapp.R
-import com.yourcompany.recipecomposeapp.core.ui.recipes.presentation.model.RecipeUiModel
+import com.yourcompany.recipecomposeapp.recipes.presentation.model.RecipeUiModel
 
 @Composable
 fun RecipeItem(

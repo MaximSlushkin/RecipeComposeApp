@@ -1,4 +1,4 @@
-package com.yourcompany.recipecomposeapp.core.ui.ingredients
+package com.yourcompany.recipecomposeapp.ingredients
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource

@@ -1,4 +1,4 @@
-package com.yourcompany.recipecomposeapp.core.ui.categories.data
+package com.yourcompany.recipecomposeapp.categories.data
 
 import com.yourcompany.recipecomposeapp.data.model.CategoryDto
 import com.yourcompany.recipecomposeapp.data.model.IngredientDto
