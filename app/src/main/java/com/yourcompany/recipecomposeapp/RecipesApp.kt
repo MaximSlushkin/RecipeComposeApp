@@ -8,9 +8,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.yourcompany.recipecomposeapp.categories.ui.CategoriesScreen
 import com.yourcompany.recipecomposeapp.favorites.ui.FavoritesScreen
@@ -37,13 +39,11 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                 val recipeId = parseRecipeIdFromUri(uri.toString())
 
                 if (recipeId != null) {
-
                     delay(100)
 
                     navController.navigate(
                         Destination.RecipeDetail.createRoute(recipeId)
                     ) {
-
                         popUpTo(navController.graph.startDestinationId) {
                             inclusive = false
                         }
@@ -83,16 +83,13 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(Destination.Categories.route) {
-                    val categories = remember {
-                        RecipesRepositoryStub
-                            .getCategories()
-                            .map { it.toUiModel() }
-                    }
-
                     CategoriesScreen(
                         modifier = Modifier,
-                        categories = categories,
-                        onCategoryClick = { categoryId, categoryTitle ->
+                        onCategoryClick = { categoryId, categoryTitle, imageUrl ->
+                            navController.currentBackStackEntry?.savedStateHandle?.apply {
+                                set("categoryTitle", categoryTitle)
+                                set("categoryImageUrl", imageUrl)
+                            }
                             navController.navigate(Destination.Recipes.createRoute(categoryId))
                         }
                     )
@@ -111,11 +108,19 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
 
                 composable(
                     route = Destination.Recipes.route,
-                    arguments = Destination.Recipes.arguments
+                    arguments = listOf(
+                        navArgument("categoryId") {
+                            type = NavType.IntType
+                            defaultValue = -1
+                        }
+                    )
                 ) { backStackEntry ->
                     val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: -1
-                    val categories = remember { RecipesRepositoryStub.getCategories() }
-                    val categoryTitle = categories.find { it.id == categoryId }?.title ?: "Рецепты"
+
+                    val categoryTitle = backStackEntry.savedStateHandle
+                        .remove<String>("categoryTitle") ?: "Рецепты"
+                    val categoryImageUrl = backStackEntry.savedStateHandle
+                        .remove<String>("categoryImageUrl") ?: ""
 
                     RecipesScreen(
                         categoryId = categoryId,
@@ -129,14 +134,17 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
 
                 composable(
                     route = Destination.RecipeDetail.route,
-                    arguments = Destination.RecipeDetail.arguments,
+                    arguments = listOf(
+                        navArgument(Constants.PARAM_RECIPE_ID) {
+                            type = NavType.IntType
+                            defaultValue = -1
+                        }
+                    ),
                     deepLinks = listOf(
-
                         navDeepLink {
                             uriPattern =
                                 "${Constants.DEEP_LINK_SCHEME}://recipe/{${Constants.PARAM_RECIPE_ID}}"
                         },
-
                         navDeepLink {
                             uriPattern =
                                 "${Constants.DEEP_LINK_BASE_URL}/recipe/{${Constants.PARAM_RECIPE_ID}}"
@@ -145,9 +153,7 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                 ) { backStackEntry ->
                     val recipeId = backStackEntry.arguments?.getInt(Constants.PARAM_RECIPE_ID) ?: -1
 
-                    val recipe = remember(recipeId) {
-                        getRecipeById(recipeId)?.toUiModel()
-                    }
+                    val recipe = getRecipeById(recipeId)?.toUiModel()
 
                     RecipeDetailsScreen(
                         recipeId = recipeId,
@@ -164,7 +170,6 @@ private fun parseRecipeIdFromUri(uriString: String): Int? {
     return try {
         when {
             uriString.startsWith("recipeapp://") -> {
-
                 val path = uriString.removePrefix("recipeapp://")
                 if (path.startsWith("recipe/")) {
                     path.removePrefix("recipe/").toIntOrNull()
@@ -174,7 +179,6 @@ private fun parseRecipeIdFromUri(uriString: String): Int? {
             }
 
             uriString.startsWith("https://recipes.androidsprint.ru/recipe/") -> {
-
                 uriString.removePrefix("https://recipes.androidsprint.ru/recipe/").toIntOrNull()
             }
 
