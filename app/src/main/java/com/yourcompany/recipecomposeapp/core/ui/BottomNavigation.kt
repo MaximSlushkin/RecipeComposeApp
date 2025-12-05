@@ -1,4 +1,4 @@
-package com.yourcompany.recipecomposeapp.core.ui.navigation
+package com.yourcompany.recipecomposeapp.core.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -30,6 +30,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.yourcompany.recipecomposeapp.R
+import com.yourcompany.recipecomposeapp.core.ui.navigation.Destination
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
 

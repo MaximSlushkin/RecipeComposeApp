@@ -1,4 +1,4 @@
-package com.yourcompany.recipecomposeapp.core.ui.ingredients
+package com.yourcompany.recipecomposeapp.ingredients
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth

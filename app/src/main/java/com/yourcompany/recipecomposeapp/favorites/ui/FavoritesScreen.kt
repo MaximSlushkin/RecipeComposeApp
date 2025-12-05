@@ -1,9 +1,10 @@
-package com.yourcompany.recipecomposeapp.core.ui.favorites
+package com.yourcompany.recipecomposeapp.favorites.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,7 +16,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,10 +29,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
-import com.yourcompany.recipecomposeapp.core.ui.recipes.RecipeItem
-import com.yourcompany.recipecomposeapp.data.model.RecipeUiModel
-import com.yourcompany.recipecomposeapp.data.model.toUiModel
-import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryStub
+import com.yourcompany.recipecomposeapp.recipes.ui.RecipeItem
+import com.yourcompany.recipecomposeapp.recipes.presentation.model.RecipeUiModel
+import com.yourcompany.recipecomposeapp.categories.data.RecipesRepositoryStub
+import com.yourcompany.recipecomposeapp.recipes.presentation.model.toUiModel
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
 import kotlinx.coroutines.flow.map
@@ -113,7 +113,7 @@ private fun RecipesList(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+        contentPadding = PaddingValues(
             vertical = dimensionResource(R.dimen.mainPadding)
         ),
         verticalArrangement = Arrangement.spacedBy(

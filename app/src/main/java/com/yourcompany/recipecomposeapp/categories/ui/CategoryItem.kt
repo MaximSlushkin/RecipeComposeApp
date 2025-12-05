@@ -1,4 +1,4 @@
-package com.yourcompany.recipecomposeapp.core.ui.categories
+package com.yourcompany.recipecomposeapp.categories.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column

@@ -1,7 +1,8 @@
-package com.yourcompany.recipecomposeapp.data.model
+package com.yourcompany.recipecomposeapp.ingredients.presentation.model
 
 import android.os.Parcelable
 import androidx.compose.runtime.Immutable
+import com.yourcompany.recipecomposeapp.data.model.IngredientDto
 import kotlinx.parcelize.Parcelize
 
 @Parcelize

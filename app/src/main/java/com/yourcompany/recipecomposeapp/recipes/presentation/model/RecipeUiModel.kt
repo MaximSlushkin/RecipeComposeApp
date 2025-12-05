@@ -1,8 +1,11 @@
-package com.yourcompany.recipecomposeapp.data.model
+package com.yourcompany.recipecomposeapp.recipes.presentation.model
 
 import android.os.Parcelable
 import androidx.compose.runtime.Immutable
-import com.yourcompany.recipecomposeapp.Constants
+import com.yourcompany.recipecomposeapp.utils.Constants
+import com.yourcompany.recipecomposeapp.ingredients.presentation.model.IngredientUiModel
+import com.yourcompany.recipecomposeapp.data.model.RecipeDto
+import com.yourcompany.recipecomposeapp.ingredients.presentation.model.toUiModel
 import kotlinx.parcelize.Parcelize
 
 @Parcelize

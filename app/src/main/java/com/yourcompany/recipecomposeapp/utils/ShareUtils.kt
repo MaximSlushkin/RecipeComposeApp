@@ -2,7 +2,6 @@ package com.yourcompany.recipecomposeapp.utils
 
 import android.content.Context
 import android.content.Intent
-import com.yourcompany.recipecomposeapp.Constants
 
 object ShareUtils {
 

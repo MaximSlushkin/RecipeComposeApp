@@ -2,7 +2,7 @@ package com.yourcompany.recipecomposeapp.core.ui.navigation
 
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
-import com.yourcompany.recipecomposeapp.Constants
+import com.yourcompany.recipecomposeapp.utils.Constants
 
 
 sealed class Destination(
