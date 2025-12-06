@@ -10,76 +10,66 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
+import com.yourcompany.recipecomposeapp.recipes.presentation.RecipesViewModel
 import com.yourcompany.recipecomposeapp.recipes.presentation.model.RecipeUiModel
-import com.yourcompany.recipecomposeapp.categories.data.RecipesRepositoryStub
-import com.yourcompany.recipecomposeapp.recipes.presentation.model.toUiModel
 
 @Composable
 fun RecipesScreen(
-    categoryId: Int,
-    categoryTitle: String,
     modifier: Modifier = Modifier,
     onRecipeClick: (Int, RecipeUiModel) -> Unit = { _, _ -> }
 ) {
-    var recipes by remember { mutableStateOf<List<RecipeUiModel>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(key1 = categoryId) {
-        isLoading = true
-        errorMessage = null
-
-        try {
-            val recipesDto = RecipesRepositoryStub.getRecipesByCategoryId(categoryId)
-            recipes = recipesDto.map { it.toUiModel() }
-        } catch (e: Exception) {
-            errorMessage = "Не удалось загрузить рецепты: ${e.localizedMessage}"
-        } finally {
-            isLoading = false
-        }
-    }
+    val viewModel: RecipesViewModel = viewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+
         ScreenHeader(
-            header = categoryTitle,
+            header = uiState.categoryTitle,
+            imageUrl = uiState.categoryImageUrl,
             imageRes = R.drawable.bcg_categories,
-            modifier = Modifier
+            modifier = Modifier,
         )
 
         when {
-            isLoading -> {
+            uiState.isLoading -> {
                 LoadingState()
             }
-            errorMessage != null -> {
-                ErrorState(errorMessage = errorMessage!!)
+
+            uiState.hasError -> {
+                ErrorState(
+                    errorMessage = uiState.errorMessage ?: "Неизвестная ошибка",
+                    onRetry = viewModel::retry
+                )
             }
-            recipes.isEmpty() -> {
+
+            uiState.isEmpty -> {
                 EmptyState()
             }
+
             else -> {
                 RecipesList(
-                    recipes = recipes,
+                    recipes = uiState.recipes,
                     onRecipeClick = onRecipeClick
                 )
             }
@@ -141,20 +131,28 @@ private fun LoadingState() {
 }
 
 @Composable
-private fun ErrorState(errorMessage: String) {
+private fun ErrorState(errorMessage: String, onRetry: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = errorMessage,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center,
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.padding(16.dp)
-        )
+        ) {
+            Text(
+                text = errorMessage,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center
+            )
+            Button(onClick = onRetry) {
+                Text("Повторить")
+            }
+        }
     }
 }
 
@@ -179,8 +177,5 @@ private fun EmptyState() {
 @Preview(showBackground = true)
 @Composable
 fun RecipesScreenPreview() {
-    RecipesScreen(
-        categoryId = 0,
-        categoryTitle = "Бургеры"
-    )
+    RecipesScreen()
 }
