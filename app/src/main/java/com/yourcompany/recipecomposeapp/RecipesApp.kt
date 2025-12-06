@@ -5,10 +5,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -19,7 +17,6 @@ import com.yourcompany.recipecomposeapp.favorites.ui.FavoritesScreen
 import com.yourcompany.recipecomposeapp.core.ui.BottomNavigation
 import com.yourcompany.recipecomposeapp.core.ui.navigation.Destination
 import com.yourcompany.recipecomposeapp.recipes.ui.RecipesScreen
-import com.yourcompany.recipecomposeapp.categories.presentation.model.toUiModel
 import com.yourcompany.recipecomposeapp.categories.data.RecipesRepositoryStub
 import com.yourcompany.recipecomposeapp.recipedetails.RecipeDetailsScreen
 import com.yourcompany.recipecomposeapp.recipes.presentation.model.toUiModel
@@ -86,11 +83,17 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                     CategoriesScreen(
                         modifier = Modifier,
                         onCategoryClick = { categoryId, categoryTitle, imageUrl ->
-                            navController.currentBackStackEntry?.savedStateHandle?.apply {
-                                set("categoryTitle", categoryTitle)
-                                set("categoryImageUrl", imageUrl)
-                            }
-                            navController.navigate(Destination.Recipes.createRoute(categoryId))
+                            // Безопасная передача параметров
+                            val safeCategoryId = categoryId.takeIf { it >= 0 } ?: Constants.DEFAULT_CATEGORY_ID
+                            val safeCategoryTitle = categoryTitle.ifEmpty { Constants.DEFAULT_CATEGORY_TITLE }
+                            val safeImageUrl = imageUrl.ifEmpty { Constants.DEFAULT_CATEGORY_IMAGE_URL }
+
+                            val route = Destination.Recipes.createRoute(
+                                categoryId = safeCategoryId,
+                                categoryTitle = safeCategoryTitle,
+                                categoryImageUrl = safeImageUrl
+                            )
+                            navController.navigate(route)
                         }
                     )
                 }
@@ -108,23 +111,16 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
 
                 composable(
                     route = Destination.Recipes.route,
-                    arguments = listOf(
-                        navArgument("categoryId") {
-                            type = NavType.IntType
-                            defaultValue = -1
-                        }
-                    )
+                    arguments = Destination.Recipes.arguments
                 ) { backStackEntry ->
-                    val categoryId = backStackEntry.arguments?.getInt("categoryId") ?: -1
 
-                    val categoryTitle = backStackEntry.savedStateHandle
-                        .remove<String>("categoryTitle") ?: "Рецепты"
-                    val categoryImageUrl = backStackEntry.savedStateHandle
-                        .remove<String>("categoryImageUrl") ?: ""
+                    val categoryId = backStackEntry.arguments?.getInt(Constants.KEY_CATEGORY_ID) ?: Constants.DEFAULT_CATEGORY_ID
+                    val categoryTitle = backStackEntry.arguments?.getString(Constants.KEY_CATEGORY_TITLE) ?: Constants.DEFAULT_CATEGORY_TITLE
+                    val categoryImageUrl = backStackEntry.arguments?.getString(Constants.KEY_CATEGORY_IMAGE_URL) ?: Constants.DEFAULT_CATEGORY_IMAGE_URL
+
+                    println("Навигация: categoryId=$categoryId, title='$categoryTitle', image='$categoryImageUrl'")
 
                     RecipesScreen(
-                        categoryId = categoryId,
-                        categoryTitle = categoryTitle,
                         modifier = Modifier,
                         onRecipeClick = { recipeId, recipe ->
                             navController.navigate(Destination.RecipeDetail.createRoute(recipeId))
@@ -134,12 +130,7 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
 
                 composable(
                     route = Destination.RecipeDetail.route,
-                    arguments = listOf(
-                        navArgument(Constants.PARAM_RECIPE_ID) {
-                            type = NavType.IntType
-                            defaultValue = -1
-                        }
-                    ),
+                    arguments = Destination.RecipeDetail.arguments,
                     deepLinks = listOf(
                         navDeepLink {
                             uriPattern =
@@ -172,19 +163,20 @@ private fun parseRecipeIdFromUri(uriString: String): Int? {
             uriString.startsWith("recipeapp://") -> {
                 val path = uriString.removePrefix("recipeapp://")
                 if (path.startsWith("recipe/")) {
-                    path.removePrefix("recipe/").toIntOrNull()
+                    path.removePrefix("recipe/").toIntOrNull() ?: -1
                 } else {
                     null
                 }
             }
 
             uriString.startsWith("https://recipes.androidsprint.ru/recipe/") -> {
-                uriString.removePrefix("https://recipes.androidsprint.ru/recipe/").toIntOrNull()
+                uriString.removePrefix("https://recipes.androidsprint.ru/recipe/").toIntOrNull() ?: -1
             }
 
             else -> null
         }
     } catch (e: Exception) {
+        println("Ошибка парсинга URI: ${e.message}")
         null
     }
 }

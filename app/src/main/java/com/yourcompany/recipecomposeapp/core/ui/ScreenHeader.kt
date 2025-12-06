@@ -26,13 +26,15 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.yourcompany.recipecomposeapp.R
 
 @Composable
 fun ScreenHeader(
     header: String,
-    imageRes: Int,
     modifier: Modifier = Modifier,
+    imageUrl: String = "",
+    imageRes: Int = R.drawable.bcg_categories,
     showShareButton: Boolean = false,
     onShareClick: () -> Unit = {},
     isFavorite: Boolean = false,
@@ -44,12 +46,24 @@ fun ScreenHeader(
             .height(224.dp),
         contentAlignment = Alignment.BottomStart,
     ) {
-        Image(
-            painter = painterResource(id = imageRes),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-        )
+
+        if (imageUrl.isNotEmpty()) {
+            AsyncImage(
+                model = imageUrl,
+                placeholder = painterResource(imageRes),
+                error = painterResource(imageRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } else {
+            Image(
+                painter = painterResource(id = imageRes),
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
 
         if (showShareButton) {
             Row(
