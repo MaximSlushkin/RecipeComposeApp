@@ -35,16 +35,20 @@ class RecipeDetailsViewModel(
         if (recipeId != -1) {
             loadRecipe()
             setupReactiveSubscriptions()
+        } else {
+            _uiState.update { currentState ->
+                currentState.copy(
+                    errorMessage = "Неверный ID рецепта",
+                    isLoading = false
+                )
+            }
         }
     }
 
     private fun getRecipeIdFromSavedState(): Int {
-
-        savedStateHandle.get<Int>("recipeId")?.let { return it }
-
-        savedStateHandle.get<String>("recipeId")?.toIntOrNull()?.let { return it }
-
-        return -1
+        return savedStateHandle.get<Int>("recipeId")
+            ?: savedStateHandle.get<String>("recipeId")?.toIntOrNull()
+            ?: -1
     }
 
     fun loadRecipe() {
@@ -56,10 +60,7 @@ class RecipeDetailsViewModel(
 
         viewModelScope.launch {
             try {
-                val allRecipes = repository.getCategories().flatMap { category ->
-                    repository.getRecipesByCategoryId(category.id)
-                }
-                val recipeDto = allRecipes.find { it.id == recipeId }
+                val recipeDto = getRecipeFromRepository(recipeId)
 
                 if (recipeDto != null) {
                     val recipe = recipeDto.toUiModel()
@@ -88,6 +89,11 @@ class RecipeDetailsViewModel(
             }
         }
     }
+
+    private suspend fun getRecipeFromRepository(recipeId: Int) = repository
+        .getCategories()
+        .flatMap { category -> repository.getRecipesByCategoryId(category.id) }
+        .find { it.id == recipeId }
 
     private fun setupReactiveSubscriptions() {
         viewModelScope.launch {
