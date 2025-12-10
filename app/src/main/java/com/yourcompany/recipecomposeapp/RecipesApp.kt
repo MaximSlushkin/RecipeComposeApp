@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -22,7 +23,6 @@ import com.yourcompany.recipecomposeapp.recipedetails.RecipeDetailsScreen
 import com.yourcompany.recipecomposeapp.recipes.presentation.model.toUiModel
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 import com.yourcompany.recipecomposeapp.utils.Constants
-import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
 import kotlinx.coroutines.delay
 
 @Composable
@@ -83,7 +83,6 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                     CategoriesScreen(
                         modifier = Modifier,
                         onCategoryClick = { categoryId, categoryTitle, imageUrl ->
-                            // Безопасная передача параметров
                             val safeCategoryId = categoryId.takeIf { it >= 0 } ?: Constants.DEFAULT_CATEGORY_ID
                             val safeCategoryTitle = categoryTitle.ifEmpty { Constants.DEFAULT_CATEGORY_TITLE }
                             val safeImageUrl = imageUrl.ifEmpty { Constants.DEFAULT_CATEGORY_IMAGE_URL }
@@ -100,8 +99,6 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
 
                 composable(Destination.Favorites.route) {
                     FavoritesScreen(
-                        favoriteManager = FavoriteDataStoreManager(LocalContext.current),
-                        recipesRepository = RecipesRepositoryStub,
                         modifier = Modifier,
                         onRecipeClick = { recipeId, recipe ->
                             navController.navigate(Destination.RecipeDetail.createRoute(recipeId))
@@ -113,7 +110,6 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                     route = Destination.Recipes.route,
                     arguments = Destination.Recipes.arguments
                 ) { backStackEntry ->
-
                     val categoryId = backStackEntry.arguments?.getInt(Constants.KEY_CATEGORY_ID) ?: Constants.DEFAULT_CATEGORY_ID
                     val categoryTitle = backStackEntry.arguments?.getString(Constants.KEY_CATEGORY_TITLE) ?: Constants.DEFAULT_CATEGORY_TITLE
                     val categoryImageUrl = backStackEntry.arguments?.getString(Constants.KEY_CATEGORY_IMAGE_URL) ?: Constants.DEFAULT_CATEGORY_IMAGE_URL
@@ -123,7 +119,7 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                     RecipesScreen(
                         modifier = Modifier,
                         onRecipeClick = { recipeId, recipe ->
-                            navController.navigate(Destination.RecipeDetail.createRoute(recipeId))
+                        navController.navigate(Destination.RecipeDetail.createRoute(recipeId))
                         }
                     )
                 }
@@ -143,7 +139,6 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                     )
                 ) { backStackEntry ->
                     val recipeId = backStackEntry.arguments?.getInt(Constants.PARAM_RECIPE_ID) ?: -1
-
                     val recipe = getRecipeById(recipeId)?.toUiModel()
 
                     RecipeDetailsScreen(

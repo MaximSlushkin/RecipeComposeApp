@@ -46,6 +46,7 @@ fun CategoriesScreen(
     ) {
         ScreenHeader(
             header = "Категории",
+            imageUrl = "",
             imageRes = R.drawable.bcg_categories
         )
 
@@ -200,6 +201,7 @@ fun CategoriesScreenPreview() {
         ) {
             ScreenHeader(
                 header = "Категории",
+                imageUrl = "",
                 imageRes = R.drawable.bcg_categories
             )
 

@@ -32,9 +32,9 @@ import com.yourcompany.recipecomposeapp.R
 @Composable
 fun ScreenHeader(
     header: String,
+    imageUrl: String,
+    imageRes: Int,
     modifier: Modifier = Modifier,
-    imageUrl: String = "",
-    imageRes: Int = R.drawable.bcg_categories,
     showShareButton: Boolean = false,
     onShareClick: () -> Unit = {},
     isFavorite: Boolean = false,
@@ -125,10 +125,11 @@ fun ScreenHeader(
 private fun ScreenHeaderPreview() {
     ScreenHeader(
         header = "Категории",
+        imageUrl = "",
         imageRes = R.drawable.bcg_categories,
         showShareButton = true,
         onShareClick = {},
         isFavorite = true,
-        onFavoriteToggle = {}
+        onFavoriteToggle = {},
     )
 }
