@@ -43,7 +43,26 @@ fun RecipeDetailsScreen(
     recipe: RecipeUiModel? = null,
     modifier: Modifier = Modifier
 ) {
-    val application = LocalContext.current.applicationContext as Application
+    val application = LocalContext.current.applicationContext as? Application
+    if (application == null) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(dimensionResource(R.dimen.mainPadding)),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Ошибка инициализации приложения",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center
+            )
+        }
+        return
+    }
+
     val viewModel: RecipeDetailsViewModel = viewModel(
         factory = RecipeDetailsViewModel.Factory(application, recipeId)
     )
@@ -63,25 +82,28 @@ fun RecipeDetailsScreen(
         when {
             uiState.isLoading -> LoadingState()
             uiState.hasError -> ErrorState(
-                errorMessage = uiState.errorMessage!!,
+                errorMessage = uiState.errorMessage ?: "Произошла неизвестная ошибка",
                 onRetry = { viewModel.loadRecipe() }
             )
-            uiState.recipe != null -> RecipeContent(
-                recipe = uiState.recipe!!,
-                currentPortions = uiState.currentPortions,
-                isFavorite = uiState.isFavorite,
-                isFavoriteOperationInProgress = uiState.isFavoriteOperationInProgress,
-                onPortionsChanged = { newPortions -> viewModel.updatePortions(newPortions) },
-                onShareClick = {
-                    ShareUtils.shareRecipe(
-                        context,
-                        uiState.recipe!!.id,
-                        uiState.recipe!!.title
-                    )
-                },
-                onFavoriteToggle = { viewModel.toggleFavorite() },
-                modifier = Modifier.fillMaxSize()
-            )
+            uiState.recipe != null -> {
+                val currentRecipe = uiState.recipe ?: return
+                RecipeContent(
+                    recipe = currentRecipe,
+                    currentPortions = uiState.currentPortions,
+                    isFavorite = uiState.isFavorite,
+                    isFavoriteOperationInProgress = uiState.isFavoriteOperationInProgress,
+                    onPortionsChanged = { newPortions -> viewModel.updatePortions(newPortions) },
+                    onShareClick = {
+                        ShareUtils.shareRecipe(
+                            context,
+                            currentRecipe.id,
+                            currentRecipe.title
+                        )
+                    },
+                    onFavoriteToggle = { viewModel.toggleFavorite() },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
             else -> EmptyState()
         }
     }
