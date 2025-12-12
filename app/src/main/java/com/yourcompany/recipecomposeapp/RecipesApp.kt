@@ -100,7 +100,8 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                 composable(Destination.Favorites.route) {
                     FavoritesScreen(
                         modifier = Modifier,
-                        onRecipeClick = { recipeId, recipe ->
+                        onRecipeClick = { recipeId ->
+
                             navController.navigate(Destination.RecipeDetail.createRoute(recipeId))
                         }
                     )
@@ -114,12 +115,11 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                     val categoryTitle = backStackEntry.arguments?.getString(Constants.KEY_CATEGORY_TITLE) ?: Constants.DEFAULT_CATEGORY_TITLE
                     val categoryImageUrl = backStackEntry.arguments?.getString(Constants.KEY_CATEGORY_IMAGE_URL) ?: Constants.DEFAULT_CATEGORY_IMAGE_URL
 
-                    println("Навигация: categoryId=$categoryId, title='$categoryTitle', image='$categoryImageUrl'")
-
                     RecipesScreen(
                         modifier = Modifier,
-                        onRecipeClick = { recipeId, recipe ->
-                        navController.navigate(Destination.RecipeDetail.createRoute(recipeId))
+                        onRecipeClick = { recipeId ->
+
+                            navController.navigate(Destination.RecipeDetail.createRoute(recipeId))
                         }
                     )
                 }
@@ -139,11 +139,9 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                     )
                 ) { backStackEntry ->
                     val recipeId = backStackEntry.arguments?.getInt(Constants.PARAM_RECIPE_ID) ?: -1
-                    val recipe = getRecipeById(recipeId)?.toUiModel()
 
                     RecipeDetailsScreen(
                         recipeId = recipeId,
-                        recipe = recipe,
                         modifier = Modifier
                     )
                 }
@@ -171,14 +169,6 @@ private fun parseRecipeIdFromUri(uriString: String): Int? {
             else -> null
         }
     } catch (e: Exception) {
-        println("Ошибка парсинга URI: ${e.message}")
         null
     }
 }
-
-private fun getRecipeById(recipeId: Int) = RecipesRepositoryStub
-    .getCategories()
-    .flatMap { category ->
-        RecipesRepositoryStub.getRecipesByCategoryId(category.id)
-    }
-    .find { it.id == recipeId }
