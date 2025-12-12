@@ -1,5 +1,6 @@
 package com.yourcompany.recipecomposeapp.recipedetails
 
+import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,13 +14,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,22 +25,17 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
-import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
 import com.yourcompany.recipecomposeapp.ingredients.IngredientItem
 import com.yourcompany.recipecomposeapp.ingredients.InstructionItem
 import com.yourcompany.recipecomposeapp.ingredients.PortionsSlider
 import com.yourcompany.recipecomposeapp.ingredients.presentation.model.IngredientUiModel
 import com.yourcompany.recipecomposeapp.recipes.presentation.model.RecipeUiModel
-import com.yourcompany.recipecomposeapp.categories.data.RecipesRepositoryStub
+import com.yourcompany.recipecomposeapp.recipedetails.presentation.RecipeDetailsViewModel
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 import com.yourcompany.recipecomposeapp.utils.ShareUtils
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import androidx.compose.runtime.collectAsState
-import com.yourcompany.recipecomposeapp.recipes.presentation.model.toUiModel
 
 @Composable
 fun RecipeDetailsScreen(
@@ -50,117 +43,87 @@ fun RecipeDetailsScreen(
     recipe: RecipeUiModel? = null,
     modifier: Modifier = Modifier
 ) {
-    var currentRecipe by remember { mutableStateOf(recipe) }
-    var isLoading by remember { mutableStateOf(recipe == null) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-
-    var currentPortions by rememberSaveable { mutableStateOf(recipe?.servings ?: 1) }
-
-    val context = LocalContext.current
-    val favoriteManager = remember { FavoriteDataStoreManager(context) }
-    val coroutineScope = rememberCoroutineScope()
-
-    val isFavorite by favoriteManager.isFavoriteFlow(recipeId)
-        .collectAsState(initial = false)
-
-    var isFavoriteOperationInProgress by remember { mutableStateOf(false) }
-
-    LaunchedEffect(key1 = recipeId) {
-        if (recipe == null) {
-            isLoading = true
-            errorMessage = null
-
-            try {
-                val foundRecipe = withContext(Dispatchers.IO) {
-                    val allRecipes = RecipesRepositoryStub.getCategories().flatMap { category ->
-                        RecipesRepositoryStub.getRecipesByCategoryId(category.id)
-                    }
-                    allRecipes.find { it.id == recipeId }?.toUiModel()
-                }
-
-                if (foundRecipe != null) {
-                    currentRecipe = foundRecipe
-                    if (currentPortions == 1) {
-                        currentPortions = foundRecipe.servings
-                    }
-                } else {
-                    errorMessage = "Рецепт не найден"
-                }
-            } catch (e: Exception) {
-                errorMessage = "Ошибка загрузки: ${e.localizedMessage}"
-            } finally {
-                isLoading = false
-            }
-        } else {
-            currentRecipe = recipe
-            if (currentPortions == 1) {
-                currentPortions = recipe.servings
-            }
-            isLoading = false
-        }
-    }
-
-    val onFavoriteToggle: () -> Unit = onFavoriteToggle@{
-        if (isFavoriteOperationInProgress) {
-            return@onFavoriteToggle
-        }
-
-        isFavoriteOperationInProgress = true
-
-        coroutineScope.launch {
-            try {
-
-                favoriteManager.toggleFavorite(recipeId)
-            } catch (e: Exception) {
-
-                errorMessage = "Не удалось обновить избранное"
-            } finally {
-                isFavoriteOperationInProgress = false
-            }
-        }
-    }
-
-    when {
-        isLoading -> {
-            LoadingState()
-        }
-
-        errorMessage != null -> {
-            ErrorState(errorMessage = errorMessage!!)
-        }
-
-        currentRecipe != null -> {
-            RecipeContent(
-                recipe = currentRecipe!!,
-                currentPortions = currentPortions,
-                onPortionsChanged = { newPortions -> currentPortions = newPortions },
-                onShareClick = {
-                    ShareUtils.shareRecipe(context, currentRecipe!!.id, currentRecipe!!.title)
-                },
-                isFavorite = isFavorite,
-                onFavoriteToggle = onFavoriteToggle,
-                modifier = modifier
+    val application = LocalContext.current.applicationContext as? Application
+    if (application == null) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(dimensionResource(R.dimen.mainPadding)),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Ошибка инициализации приложения",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center
             )
         }
+        return
+    }
 
-        else -> {
-            EmptyState()
+    val viewModel: RecipeDetailsViewModel = viewModel(
+        factory = RecipeDetailsViewModel.Factory(application, recipeId)
+    )
+
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(recipe) {
+        recipe?.let { viewModel.initializeWithRecipe(it) }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        when {
+            uiState.isLoading -> LoadingState()
+            uiState.hasError -> ErrorState(
+                errorMessage = uiState.errorMessage ?: "Произошла неизвестная ошибка",
+                onRetry = { viewModel.loadRecipe() }
+            )
+            uiState.recipe != null -> {
+                val currentRecipe = uiState.recipe ?: return
+                RecipeContent(
+                    recipe = currentRecipe,
+                    currentPortions = uiState.currentPortions,
+                    isFavorite = uiState.isFavorite,
+                    isFavoriteOperationInProgress = uiState.isFavoriteOperationInProgress,
+                    onPortionsChanged = { newPortions -> viewModel.updatePortions(newPortions) },
+                    onShareClick = {
+                        ShareUtils.shareRecipe(
+                            context,
+                            currentRecipe.id,
+                            currentRecipe.title
+                        )
+                    },
+                    onFavoriteToggle = { viewModel.toggleFavorite() },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+            else -> EmptyState()
         }
     }
 }
 
 @Composable
-private fun RecipeContent(
+fun RecipeContent(
     recipe: RecipeUiModel,
     currentPortions: Int,
+    isFavorite: Boolean,
+    isFavoriteOperationInProgress: Boolean,
     onPortionsChanged: (Int) -> Unit,
     onShareClick: () -> Unit,
-    isFavorite: Boolean,
     onFavoriteToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val multiplier = remember(currentPortions, recipe.servings) {
+    val multiplier = if (recipe.servings > 0) {
         currentPortions.toFloat() / recipe.servings.toFloat()
+    } else {
+        1.0f
     }
 
     val adjustedIngredients by remember(recipe.ingredients, multiplier) {
@@ -178,6 +141,7 @@ private fun RecipeContent(
     ) {
         ScreenHeader(
             header = recipe.title,
+            imageUrl = "",
             imageRes = R.drawable.bcg_categories,
             showShareButton = true,
             onShareClick = onShareClick,
@@ -248,6 +212,66 @@ private fun RecipeContent(
     }
 }
 
+@Composable
+private fun LoadingState() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(dimensionResource(R.dimen.mainPadding)),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        CircularProgressIndicator()
+        Text(
+            text = "Загрузка рецепта...",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(top = 16.dp)
+        )
+    }
+}
+
+@Composable
+private fun ErrorState(
+    errorMessage: String,
+    onRetry: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(dimensionResource(R.dimen.mainPadding)),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = errorMessage,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun EmptyState() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(dimensionResource(R.dimen.mainPadding)),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Рецепт не найден",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+    }
+}
+
 private fun adjustIngredientForPortions(
     ingredient: IngredientUiModel,
     multiplier: Float
@@ -298,63 +322,6 @@ private fun formatAdjustedAmount(amount: Float, unit: String): String {
     }
 }
 
-@Composable
-private fun LoadingState() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(dimensionResource(R.dimen.mainPadding)),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        CircularProgressIndicator()
-        Text(
-            text = "Загрузка рецепта...",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(top = 16.dp)
-        )
-    }
-}
-
-@Composable
-private fun ErrorState(errorMessage: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(dimensionResource(R.dimen.mainPadding)),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = errorMessage,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.error,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
-private fun EmptyState() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(dimensionResource(R.dimen.mainPadding)),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Рецепт не найден",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-    }
-}
-
 @Preview(showBackground = true, name = "Recipe Details Loaded")
 @Composable
 fun RecipeDetailsScreenPreview() {
@@ -380,13 +347,20 @@ fun RecipeDetailsScreenPreview() {
     )
 
     RecipesAppTheme {
-        RecipeContent(
-            recipe = sampleRecipe,
-            currentPortions = 4,
-            onPortionsChanged = { },
-            onShareClick = { },
-            isFavorite = true,
-            onFavoriteToggle = { }
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            RecipeContent(
+                recipe = sampleRecipe,
+                currentPortions = 4,
+                isFavorite = true,
+                isFavoriteOperationInProgress = false,
+                onPortionsChanged = { },
+                onShareClick = { },
+                onFavoriteToggle = { }
+            )
+        }
     }
 }
