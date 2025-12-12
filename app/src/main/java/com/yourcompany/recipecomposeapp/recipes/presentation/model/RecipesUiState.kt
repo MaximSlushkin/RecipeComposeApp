@@ -12,11 +12,14 @@ data class RecipesUiState(
     val errorMessage: String? = null
 ) {
 
-    val isEmpty: Boolean get() = recipes.isEmpty() && !isLoading
+    val isEmpty: Boolean
+        get() = recipes.isEmpty() && !isLoading && errorMessage == null
 
-    val hasError: Boolean get() = errorMessage != null
+    val hasError: Boolean
+        get() = errorMessage != null
 
-    val hasData: Boolean get() = recipes.isNotEmpty() && !isLoading && !hasError
+    val hasData: Boolean
+        get() = recipes.isNotEmpty() && !isLoading && !hasError
 
     companion object {
         val Default = RecipesUiState(

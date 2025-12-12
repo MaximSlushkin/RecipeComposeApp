@@ -32,9 +32,8 @@ import com.yourcompany.recipecomposeapp.recipes.presentation.model.RecipeUiModel
 @Composable
 fun RecipesScreen(
     modifier: Modifier = Modifier,
-    onRecipeClick: (Int, RecipeUiModel) -> Unit = { _, _ -> }
+    onRecipeClick: (Int) -> Unit = { }
 ) {
-
     val viewModel: RecipesViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -43,7 +42,6 @@ fun RecipesScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-
         ScreenHeader(
             header = uiState.categoryTitle,
             imageUrl = uiState.categoryImageUrl,
@@ -80,7 +78,7 @@ fun RecipesScreen(
 @Composable
 private fun RecipesList(
     recipes: List<RecipeUiModel>,
-    onRecipeClick: (Int, RecipeUiModel) -> Unit
+    onRecipeClick: (Int) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -99,7 +97,9 @@ private fun RecipesList(
         ) { recipe ->
             RecipeItem(
                 recipe = recipe,
-                onClick = { recipeId, recipeObj -> onRecipeClick(recipeId, recipeObj) },
+                onClick = { recipeId ->
+                    onRecipeClick(recipeId)
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = dimensionResource(R.dimen.mainPadding))

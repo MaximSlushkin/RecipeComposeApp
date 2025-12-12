@@ -15,7 +15,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
 import com.yourcompany.recipecomposeapp.favorites.ui.presentaion.FavoritesViewModel
@@ -34,10 +34,10 @@ import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 @Composable
 fun FavoritesScreen(
     modifier: Modifier = Modifier,
-    onRecipeClick: (Int, RecipeUiModel) -> Unit = { _, _ -> }
+    onRecipeClick: (Int) -> Unit = { } // ИЗМЕНЕНИЕ: теперь только ID
 ) {
     val viewModel: FavoritesViewModel = viewModel()
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -82,7 +82,7 @@ fun FavoritesScreen(
 @Composable
 private fun RecipesList(
     recipes: List<RecipeUiModel>,
-    onRecipeClick: (Int, RecipeUiModel) -> Unit
+    onRecipeClick: (Int) -> Unit // ИЗМЕНЕНИЕ: теперь только ID
 ) {
     LazyColumn(
         modifier = Modifier
@@ -101,7 +101,9 @@ private fun RecipesList(
         ) { recipe ->
             RecipeItem(
                 recipe = recipe,
-                onClick = { recipeId, recipeObj -> onRecipeClick(recipeId, recipeObj) },
+                onClick = { recipeId ->
+                    onRecipeClick(recipeId) // ИЗМЕНЕНИЕ: теперь только ID
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = dimensionResource(R.dimen.mainPadding))
@@ -187,7 +189,7 @@ private fun EmptyState() {
 fun FavoritesScreenPreview() {
     RecipesAppTheme {
         FavoritesScreen(
-            onRecipeClick = { _, _ -> }
+            onRecipeClick = { } // ИЗМЕНЕНИЕ: теперь только ID
         )
     }
 }

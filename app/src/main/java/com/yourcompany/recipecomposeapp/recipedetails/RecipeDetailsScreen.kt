@@ -26,6 +26,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.compose.rememberNavController
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
 import com.yourcompany.recipecomposeapp.ingredients.IngredientItem
@@ -40,7 +42,6 @@ import com.yourcompany.recipecomposeapp.utils.ShareUtils
 @Composable
 fun RecipeDetailsScreen(
     recipeId: Int,
-    recipe: RecipeUiModel? = null,
     modifier: Modifier = Modifier
 ) {
     val application = LocalContext.current.applicationContext as? Application
@@ -64,14 +65,16 @@ fun RecipeDetailsScreen(
     }
 
     val viewModel: RecipeDetailsViewModel = viewModel(
-        factory = RecipeDetailsViewModel.Factory(application, recipeId)
+        factory = RecipeDetailsViewModel.provideFactory(application, recipeId)
     )
 
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    LaunchedEffect(recipe) {
-        recipe?.let { viewModel.initializeWithRecipe(it) }
+    LaunchedEffect(recipeId) {
+        if (uiState.recipe?.id != recipeId) {
+            viewModel.loadRecipe()
+        }
     }
 
     Column(
@@ -92,7 +95,9 @@ fun RecipeDetailsScreen(
                     currentPortions = uiState.currentPortions,
                     isFavorite = uiState.isFavorite,
                     isFavoriteOperationInProgress = uiState.isFavoriteOperationInProgress,
-                    onPortionsChanged = { newPortions -> viewModel.updatePortions(newPortions) },
+                    onPortionsChanged = { newPortions ->
+                        viewModel.updatePortions(newPortions)
+                    },
                     onShareClick = {
                         ShareUtils.shareRecipe(
                             context,
