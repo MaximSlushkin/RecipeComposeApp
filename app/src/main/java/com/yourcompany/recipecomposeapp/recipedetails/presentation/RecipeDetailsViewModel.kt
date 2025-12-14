@@ -19,8 +19,8 @@ import kotlinx.coroutines.launch
 import com.yourcompany.recipecomposeapp.utils.Constants
 
 class RecipeDetailsViewModel(
+    application: Application,
     private val savedStateHandle: SavedStateHandle,
-    application: Application
 ) : AndroidViewModel(application) {
 
     private val favoriteManager = FavoriteDataStoreManager(application)
