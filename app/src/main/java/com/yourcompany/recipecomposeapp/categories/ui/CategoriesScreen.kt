@@ -58,7 +58,7 @@ fun CategoriesScreen(
 
             uiState.error != null -> {
                 ErrorState(
-                    errorMessage = uiState.error!!,
+                    errorMessage = uiState.error ?: "Ошибка",
                     onRetry = { viewModel.refreshCategories() }
                 )
             }

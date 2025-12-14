@@ -22,23 +22,17 @@ class RecipesViewModel(
     private val _uiState = MutableStateFlow(RecipesUiState.Default)
     val uiState: StateFlow<RecipesUiState> = _uiState.asStateFlow()
 
-    private val categoryId: Int
-    private val categoryTitle: String
-    private val categoryImageUrl: String
+    private val categoryId: Int = savedStateHandle.get<Int>(Constants.KEY_CATEGORY_ID) ?: -1
+    private val categoryTitle: String = decodeParameter(
+        savedStateHandle.get<String>(Constants.KEY_CATEGORY_TITLE),
+        defaultValue = "Рецепты"
+    )
+    private val categoryImageUrl: String = decodeParameter(
+        savedStateHandle.get<String>(Constants.KEY_CATEGORY_IMAGE_URL),
+        defaultValue = ""
+    )
 
     init {
-
-        categoryId = savedStateHandle.get<Int>(Constants.KEY_CATEGORY_ID) ?: -1
-
-        categoryTitle = decodeParameter(
-            savedStateHandle.get<String>(Constants.KEY_CATEGORY_TITLE),
-            defaultValue = "Рецепты"
-        )
-
-        categoryImageUrl = decodeParameter(
-            savedStateHandle.get<String>(Constants.KEY_CATEGORY_IMAGE_URL),
-            defaultValue = ""
-        )
 
         _uiState.update { state ->
             state.copy(
@@ -56,9 +50,7 @@ class RecipesViewModel(
                 encodedParameter == null || encodedParameter.isEmpty() -> defaultValue
                 else -> URLDecoder.decode(encodedParameter, StandardCharsets.UTF_8.toString())
             }
-        } catch (e: Exception) {
-
-            println("Ошибка декодирования параметра: ${e.message}")
+        } catch (_: Exception) {
             defaultValue
         }
     }

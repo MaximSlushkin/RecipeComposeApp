@@ -7,7 +7,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.yourcompany.recipecomposeapp.categories.data.RecipesRepositoryStub
-import com.yourcompany.recipecomposeapp.recipes.presentation.model.RecipeUiModel
 import com.yourcompany.recipecomposeapp.recipedetails.presentation.model.RecipeDetailsUiState
 import com.yourcompany.recipecomposeapp.recipes.presentation.model.toUiModel
 import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
@@ -17,10 +16,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.yourcompany.recipecomposeapp.utils.Constants
 
 class RecipeDetailsViewModel(
     application: Application,
-    private val savedStateHandle: SavedStateHandle
+    private val savedStateHandle: SavedStateHandle,
 ) : AndroidViewModel(application) {
 
     private val favoriteManager = FavoriteDataStoreManager(application)
@@ -46,7 +46,8 @@ class RecipeDetailsViewModel(
     }
 
     private fun getRecipeIdFromSavedState(): Int {
-        return savedStateHandle.get<Int>("recipeId")
+
+        return savedStateHandle.get<Int>(Constants.PARAM_RECIPE_ID)
             ?: savedStateHandle.get<String>("recipeId")?.toIntOrNull()
             ?: -1
     }
@@ -64,10 +65,14 @@ class RecipeDetailsViewModel(
 
                 if (recipeDto != null) {
                     val recipe = recipeDto.toUiModel()
+
+                    val savedPortions = savedStateHandle.get<Int>("currentPortions")
+                    val initialPortions = savedPortions ?: recipe.servings
+
                     _uiState.update { currentState ->
                         currentState.copy(
                             recipe = recipe,
-                            currentPortions = recipe.servings,
+                            currentPortions = initialPortions,
                             isLoading = false
                         )
                     }
@@ -90,13 +95,14 @@ class RecipeDetailsViewModel(
         }
     }
 
-    private suspend fun getRecipeFromRepository(recipeId: Int) = repository
+    private fun getRecipeFromRepository(recipeId: Int) = repository
         .getCategories()
         .flatMap { category -> repository.getRecipesByCategoryId(category.id) }
         .find { it.id == recipeId }
 
     private fun setupReactiveSubscriptions() {
         viewModelScope.launch {
+
             combine(
                 favoriteManager.isFavoriteFlow(recipeId),
                 _uiState
@@ -106,22 +112,6 @@ class RecipeDetailsViewModel(
                 _uiState.update { newState }
             }
         }
-    }
-
-    fun initializeWithRecipe(recipe: RecipeUiModel) {
-        if (recipe.id != recipeId) {
-            return
-        }
-
-        _uiState.update { currentState ->
-            currentState.copy(
-                recipe = recipe,
-                currentPortions = recipe.servings,
-                isLoading = false
-            )
-        }
-
-        setupReactiveSubscriptions()
     }
 
     fun toggleFavorite() {
@@ -143,6 +133,9 @@ class RecipeDetailsViewModel(
 
     fun updatePortions(newPortions: Int) {
         if (newPortions > 0) {
+
+            savedStateHandle["currentPortions"] = newPortions
+
             _uiState.update { currentState ->
                 currentState.copy(currentPortions = newPortions)
             }
@@ -153,23 +146,26 @@ class RecipeDetailsViewModel(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
-    class Factory(
-        private val application: Application,
-        private val recipeId: Int
-    ) : ViewModelProvider.Factory {
+    companion object {
 
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(RecipeDetailsViewModel::class.java)) {
-                val savedStateHandle = SavedStateHandle().apply {
-                    set("recipeId", recipeId)
+        fun provideFactory(
+            application: Application,
+            recipeId: Int
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                if (modelClass.isAssignableFrom(RecipeDetailsViewModel::class.java)) {
+
+                    val savedStateHandle = SavedStateHandle().apply {
+                        set(Constants.PARAM_RECIPE_ID, recipeId)
+                    }
+                    return RecipeDetailsViewModel(
+                        savedStateHandle = savedStateHandle,
+                        application = application
+                    ) as T
                 }
-                return RecipeDetailsViewModel(
-                    application = application,
-                    savedStateHandle = savedStateHandle
-                ) as T
+                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
             }
-            throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
         }
     }
 }
