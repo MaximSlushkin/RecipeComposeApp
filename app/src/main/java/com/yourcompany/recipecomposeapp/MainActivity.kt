@@ -16,18 +16,32 @@ import com.yourcompany.recipecomposeapp.data.model.CategoryDto
 import com.yourcompany.recipecomposeapp.data.model.RecipeDto
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.net.HttpURLConnection
-import java.net.URL
+import kotlinx.serialization.decodeFromString
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
     private var deepLinkIntent by mutableStateOf<Intent?>(null)
     private val TAG = "MainActivity"
     private val jsonParser = Json { ignoreUnknownKeys = true }
 
+    // 🔥 Шаг 2: Создаем единый OkHttpClient для всех запросов
+    // OkHttpClient - это основной класс для выполнения HTTP-запросов
+    // Создается один раз и переиспользуется (лучшая практика для производительности)
+    private val okHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS) // Таймаут подключения 10 секунд
+            .readTimeout(10, TimeUnit.SECONDS)    // Таймаут чтения 10 секунд
+            .writeTimeout(10, TimeUnit.SECONDS)   // Таймаут записи 10 секунд
+            .build()
+    }
+
+    // Путь потоков для параллельных запросов (можно оставить или заменить на Coroutines позже)
     private val threadPool: ExecutorService = Executors.newFixedThreadPool(10)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,7 +50,9 @@ class MainActivity : ComponentActivity() {
 
         Log.d(TAG, "Метод onCreate() выполняется на потоке: ${Thread.currentThread().name}")
 
-        threadPool.execute {
+        // 🔥 Шаг 4: Используем thread {} вместо Thread {}
+        // Функция thread {} из Kotlin более лаконична и безопасна
+        thread {
             Log.d(TAG, "Выполняю запрос категорий на потоке: ${Thread.currentThread().name}")
             executeCategoryRequest()
         }
@@ -47,42 +63,54 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        // Завершаем пул потоков при уничтожении Activity
         threadPool.shutdown()
         Log.d(TAG, "Thread pool shutdown initiated")
     }
 
     private fun executeCategoryRequest() {
         try {
-            val connection = URL("https://recipes.androidsprint.ru/api/category")
-                .openConnection() as HttpURLConnection
+            // 🔥 Шаг 3: Заменяем URLConnection на OkHttp
 
-            connection.apply {
-                requestMethod = "GET"
-                connectTimeout = 10000
-                readTimeout = 10000
-                setRequestProperty("Accept", "application/json")
-            }
+            // 1. Создаем Request.Builder - цепочный интерфейс для построения запроса
+            val request = Request.Builder()
+                .url("https://recipes.androidsprint.ru/api/category")
+                .addHeader("Accept", "application/json") // Устанавливаем заголовки
+                .get() // Явно указываем GET метод (опционально, по умолчанию GET)
+                .build() // Собираем объект Request
 
-            val jsonResponse = if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                connection.inputStream.bufferedReader().use { it.readText() }.also {
-                    Log.d(TAG, "=== ТЕЛО ОТВЕТА ===\n$it\n=== КОНЕЦ ТЕЛА ОТВЕТА ===")
+            Log.d(TAG, "Выполняю запрос категорий с OkHttp: ${request.url}")
+
+            // 2. Создаем Call и синхронно выполняем запрос
+            val response: Response = okHttpClient.newCall(request).execute()
+
+            // 3. Проверяем успешность ответа
+            if (response.isSuccessful) {
+                // 4. Получаем тело ответа как строку
+                val responseBody = response.body?.string()
+
+                responseBody?.let {
+                    Log.d(TAG, "=== ТЕЛО ОТВЕТА ОТ ОКHTTP ===\n$it\n=== КОНЕЦ ТЕЛА ОТВЕТА ===")
+                    processCategories(it)
                 }
-            } else {
-                Log.e(TAG, "Ошибка HTTP при запросе категорий: ${connection.responseCode}")
-                null
-            }
 
-            jsonResponse?.let {
-                processCategories(it)
+                // Закрываем ResponseBody (важно для освобождения ресурсов)
+                response.body?.close()
+            } else {
+                Log.e(TAG, "Ошибка HTTP при запросе категорий: ${response.code} - ${response.message}")
+                // Можно получить детали ошибки
+                val errorBody = response.body?.string()
+                Log.e(TAG, "Тело ошибки: $errorBody")
             }
 
         } catch (e: Exception) {
-            Log.e(TAG, "Ошибка запроса категорий: ${e.message}", e)
+            Log.e(TAG, "Ошибка запроса категорий с OkHttp: ${e.message}", e)
         }
     }
 
     private fun processCategories(jsonString: String) {
         try {
+            // Десериализуем JSON в список категорий
             val categories: List<CategoryDto> = jsonParser.decodeFromString(jsonString)
 
             Log.d(TAG, "Количество полученных категорий: ${categories.size}")
@@ -91,8 +119,8 @@ class MainActivity : ComponentActivity() {
                 Log.d(TAG, "${index + 1}. ${category.title} (ID: ${category.id})")
             }
 
+            // Для каждой категории запускаем запрос рецептов в отдельном потоке
             categories.forEach { category ->
-
                 threadPool.execute {
                     Log.d(TAG, "Запускаю запрос рецептов для категории '${category.title}' на потоке: ${Thread.currentThread().name}")
                     fetchRecipesForCategory(category)
@@ -106,34 +134,47 @@ class MainActivity : ComponentActivity() {
 
     private fun fetchRecipesForCategory(category: CategoryDto) {
         try {
-            val url = URL("https://recipes.androidsprint.ru/api/category/${category.id}/recipes")
-            val connection = url.openConnection() as HttpURLConnection
+            // 🔥 Шаг 5: Обновляем запросы рецептов на OkHttp
 
-            connection.apply {
-                requestMethod = "GET"
-                connectTimeout = 10000
-                readTimeout = 10000
-                setRequestProperty("Accept", "application/json")
-            }
+            // URL для получения рецептов категории
+            val url = "https://recipes.androidsprint.ru/api/category/${category.id}/recipes"
 
-            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                val response = connection.inputStream.bufferedReader().use { it.readText() }
+            // 1. Создаем запрос
+            val request = Request.Builder()
+                .url(url)
+                .addHeader("Accept", "application/json")
+                .get() // GET запрос
+                .build()
 
-                try {
-                    val recipesResponse = jsonParser.decodeFromString<RecipesResponse>(response)
-                    Log.d(TAG, "Категория '${category.title}': получено ${recipesResponse.recipes.size} рецептов на потоке ${Thread.currentThread().name}")
+            Log.d(TAG, "Запрос рецептов для категории '${category.title}': $url")
 
-                    recipesResponse.recipes.firstOrNull()?.let { firstRecipe ->
-                        Log.d(TAG, "Первый рецепт в категории '${category.title}': ${firstRecipe.title}, ингредиентов: ${firstRecipe.ingredients.size}")
+            // 2. Выполняем запрос
+            val response: Response = okHttpClient.newCall(request).execute()
+
+            // 3. Обрабатываем ответ
+            if (response.isSuccessful) {
+                val responseBody = response.body?.string()
+
+                responseBody?.let {
+                    try {
+                        // Десериализуем ответ
+                        val recipesResponse = jsonParser.decodeFromString<RecipesResponse>(it)
+                        Log.d(TAG, "Категория '${category.title}': получено ${recipesResponse.recipes.size} рецептов на потоке ${Thread.currentThread().name}")
+
+                        // Логируем первый рецепт, если он есть
+                        recipesResponse.recipes.firstOrNull()?.let { firstRecipe ->
+                            Log.d(TAG, "Первый рецепт в категории '${category.title}': ${firstRecipe.title}, ингредиентов: ${firstRecipe.ingredients.size}")
+                        }
+                    } catch (e: Exception) {
+                        // Обработка ошибок парсинга
+                        Log.e(TAG, "Ошибка парсинга рецептов для категории '${category.title}': ${e.message}", e)
+                        Log.d(TAG, "Категория '${category.title}': получен ответ размером ${it.length} символов")
                     }
-
-                } catch (e: Exception) {
-
-                    Log.e(TAG, "Ошибка парсинга рецептов для категории '${category.title}': ${e.message}", e)
-                    Log.d(TAG, "Категория '${category.title}': получен ответ размером ${response.length} символов")
                 }
+
+                response.body?.close()
             } else {
-                Log.e(TAG, "Ошибка HTTP при запросе рецептов для категории '${category.title}': ${connection.responseCode}")
+                Log.e(TAG, "Ошибка HTTP при запросе рецептов для категории '${category.title}': ${response.code} - ${response.message}")
             }
 
         } catch (e: Exception) {
