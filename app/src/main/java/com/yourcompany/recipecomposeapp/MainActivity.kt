@@ -7,38 +7,32 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
+import com.yourcompany.recipecomposeapp.core.network.NetworkConfig
 import com.yourcompany.recipecomposeapp.data.model.CategoryDto
 import com.yourcompany.recipecomposeapp.data.model.RecipeDto
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.decodeFromString
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.Response
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import kotlin.concurrent.thread
 
 class MainActivity : ComponentActivity() {
     private var deepLinkIntent by mutableStateOf<Intent?>(null)
     private val TAG = "MainActivity"
-    private val jsonParser = Json { ignoreUnknownKeys = true }
 
-    private val okHttpClient: OkHttpClient by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
-            .build()
-    }
+    private val recipesApiService = NetworkConfig.recipesApiService
 
-    private val threadPool: ExecutorService = Executors.newFixedThreadPool(10)
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+
+    private var networkJobs: List<Job> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,115 +40,78 @@ class MainActivity : ComponentActivity() {
 
         Log.d(TAG, "Метод onCreate() выполняется на потоке: ${Thread.currentThread().name}")
 
-        thread {
-            Log.d(TAG, "Выполняю запрос категорий на потоке: ${Thread.currentThread().name}")
+        val categoriesJob = coroutineScope.launch {
+            Log.d(TAG, "Выполняю запрос категорий на корутине: ${Thread.currentThread().name}")
             executeCategoryRequest()
         }
 
+        networkJobs = listOf(categoriesJob)
+
         handleDeepLinkIntent(intent)
-        setContent { RecipesApp(deepLinkIntent = deepLinkIntent) }
+        setContent {
+            RecipesApp(deepLinkIntent = deepLinkIntent)
+
+            LaunchedEffect(Unit) {
+
+            }
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
-        threadPool.shutdown()
-        Log.d(TAG, "Thread pool shutdown initiated")
+        networkJobs.forEach { it.cancel() }
+        Log.d(TAG, "Все сетевые корутины отменены")
     }
 
-    private fun executeCategoryRequest() {
+    private suspend fun executeCategoryRequest() {
         try {
+            val categories = recipesApiService.getCategories()
 
-            val request = Request.Builder()
-                .url("https://recipes.androidsprint.ru/api/category")
-                .addHeader("Accept", "application/json")
-                .get()
-                .build()
+            Log.d(TAG, "=== УСПЕШНО ПОЛУЧЕНО ${categories.size} КАТЕГОРИЙ ЧЕРЕЗ RETROFIT ===")
+            Log.d(TAG, "Запрос выполнен на корутине: ${Thread.currentThread().name}")
 
-            Log.d(TAG, "Выполняю запрос категорий с OkHttp: ${request.url}")
-
-            val response: Response = okHttpClient.newCall(request).execute()
-
-            if (response.isSuccessful) {
-
-                val responseBody = response.body?.string()
-
-                responseBody?.let {
-                    Log.d(TAG, "=== ТЕЛО ОТВЕТА ОТ ОКHTTP ===\n$it\n=== КОНЕЦ ТЕЛА ОТВЕТА ===")
-                    processCategories(it)
-                }
-            } else {
-                Log.e(TAG, "Ошибка HTTP при запросе категорий: ${response.code} - ${response.message}")
-
-                val errorBody = response.body?.string()
-                Log.e(TAG, "Тело ошибки: $errorBody")
-            }
+            processCategories(categories)
 
         } catch (e: Exception) {
-            Log.e(TAG, "Ошибка запроса категорий с OkHttp: ${e.message}", e)
+
+            Log.e(TAG, "Ошибка запроса категорий через Retrofit: ${e.message}", e)
         }
     }
 
-    private fun processCategories(jsonString: String) {
+    private suspend fun processCategories(categories: List<CategoryDto>) {
         try {
-
-            val categories: List<CategoryDto> = jsonParser.decodeFromString(jsonString)
-
             Log.d(TAG, "Количество полученных категорий: ${categories.size}")
 
             categories.forEachIndexed { index, category ->
                 Log.d(TAG, "${index + 1}. ${category.title} (ID: ${category.id})")
             }
 
-            categories.forEach { category ->
-                threadPool.execute {
-                    Log.d(TAG, "Запускаю запрос рецептов для категории '${category.title}' на потоке: ${Thread.currentThread().name}")
+            val recipeJobs = categories.map { category ->
+                coroutineScope.async {
+                    Log.d(TAG, "Запускаю запрос рецептов для категории '${category.title}' на корутине: ${Thread.currentThread().name}")
                     fetchRecipesForCategory(category)
                 }
             }
+
+            recipeJobs.forEach { it.await() }
+            Log.d(TAG, "Все запросы рецептов завершены")
 
         } catch (e: Exception) {
             Log.e(TAG, "Ошибка обработки данных категорий: ${e.message}", e)
         }
     }
 
-    private fun fetchRecipesForCategory(category: CategoryDto) {
+    private suspend fun fetchRecipesForCategory(category: CategoryDto) {
         try {
+            Log.d(TAG, "Выполняю Retrofit запрос рецептов для категории '${category.title}'")
 
-            val url = "https://recipes.androidsprint.ru/api/category/${category.id}/recipes"
+            val recipes = recipesApiService.getRecipesByCategory(category.id)
 
+            Log.d(TAG, "Категория '${category.title}': получено ${recipes.size} рецептов")
 
-            val request = Request.Builder()
-                .url(url)
-                .addHeader("Accept", "application/json")
-                .get()
-                .build()
-
-            Log.d(TAG, "Запрос рецептов для категории '${category.title}': $url")
-
-            val response: Response = okHttpClient.newCall(request).execute()
-
-            if (response.isSuccessful) {
-                val responseBody = response.body?.string()
-
-                responseBody?.let {
-                    try {
-
-                        val recipesResponse = jsonParser.decodeFromString<RecipesResponse>(it)
-                        Log.d(TAG, "Категория '${category.title}': получено ${recipesResponse.recipes.size} рецептов на потоке ${Thread.currentThread().name}")
-
-                        recipesResponse.recipes.firstOrNull()?.let { firstRecipe ->
-                            Log.d(TAG, "Первый рецепт в категории '${category.title}': ${firstRecipe.title}, ингредиентов: ${firstRecipe.ingredients.size}")
-                        }
-                    } catch (e: Exception) {
-
-                        Log.e(TAG, "Ошибка парсинга рецептов для категории '${category.title}': ${e.message}", e)
-                        Log.d(TAG, "Категория '${category.title}': получен ответ размером ${it.length} символов")
-                    }
-                }
-
-            } else {
-                Log.e(TAG, "Ошибка HTTP при запросе рецептов для категории '${category.title}': ${response.code} - ${response.message}")
+            recipes.firstOrNull()?.let { firstRecipe ->
+                Log.d(TAG, "Первый рецепт в категории '${category.title}': ${firstRecipe.title}, ингредиентов: ${firstRecipe.ingredients.size}")
             }
 
         } catch (e: Exception) {
@@ -172,11 +129,6 @@ class MainActivity : ComponentActivity() {
         intent?.data?.let { deepLinkIntent = intent }
     }
 }
-
-@Serializable
-data class RecipesResponse(
-    val recipes: List<RecipeDto>
-)
 
 @Preview(showBackground = true)
 @Composable
