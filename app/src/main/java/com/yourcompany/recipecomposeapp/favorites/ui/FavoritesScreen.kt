@@ -1,5 +1,6 @@
 package com.yourcompany.recipecomposeapp.favorites.ui
 
+import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,8 +17,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,7 +29,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
+import com.yourcompany.recipecomposeapp.categories.data.repository.RecipesRepository
 import com.yourcompany.recipecomposeapp.favorites.ui.presentaion.FavoritesViewModel
+import com.yourcompany.recipecomposeapp.favorites.ui.presentaion.model.FavoritesUiState
 import com.yourcompany.recipecomposeapp.recipes.ui.RecipeItem
 import com.yourcompany.recipecomposeapp.recipes.presentation.model.RecipeUiModel
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
@@ -34,9 +39,19 @@ import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 @Composable
 fun FavoritesScreen(
     modifier: Modifier = Modifier,
-    onRecipeClick: (Int) -> Unit = { } // ИЗМЕНЕНИЕ: теперь только ID
+    repository: RecipesRepository,
+    onRecipeClick: (Int) -> Unit = { }
 ) {
-    val viewModel: FavoritesViewModel = viewModel()
+    val context = LocalContext.current
+    val application = context.applicationContext as Application
+
+    val viewModel: FavoritesViewModel = remember {
+        FavoritesViewModel(
+            application = application,
+            repository = repository
+        )
+    }
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
@@ -59,15 +74,18 @@ fun FavoritesScreen(
                 uiState.isLoading -> {
                     LoadingState()
                 }
+
                 uiState.hasError -> {
                     ErrorState(
                         errorMessage = uiState.errorMessage ?: "Произошла неизвестная ошибка",
                         onRetry = { viewModel.refresh() }
                     )
                 }
+
                 uiState.isEmpty -> {
                     EmptyState()
                 }
+
                 else -> {
                     RecipesList(
                         recipes = uiState.favoriteRecipes,
@@ -82,7 +100,7 @@ fun FavoritesScreen(
 @Composable
 private fun RecipesList(
     recipes: List<RecipeUiModel>,
-    onRecipeClick: (Int) -> Unit // ИЗМЕНЕНИЕ: теперь только ID
+    onRecipeClick: (Int) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier
@@ -102,7 +120,7 @@ private fun RecipesList(
             RecipeItem(
                 recipe = recipe,
                 onClick = { recipeId ->
-                    onRecipeClick(recipeId) // ИЗМЕНЕНИЕ: теперь только ID
+                    onRecipeClick(recipeId)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -188,8 +206,37 @@ private fun EmptyState() {
 @Composable
 fun FavoritesScreenPreview() {
     RecipesAppTheme {
-        FavoritesScreen(
-            onRecipeClick = { } // ИЗМЕНЕНИЕ: теперь только ID
+        val viewModel: FavoritesViewModel = viewModel()
+        val uiState = FavoritesUiState(
+            favoriteRecipes = listOf(
+                RecipeUiModel(
+                    id = 1,
+                    title = "Классический бургер",
+                    imageUrl = "",
+                    ingredients = emptyList(),
+                    method = emptyList()
+                )
+            ),
+            isLoading = false,
+            isEmpty = false
         )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            ScreenHeader(
+                header = "Избранное",
+                imageUrl = "",
+                imageRes = R.drawable.bcg_categories,
+                modifier = Modifier
+            )
+
+            RecipesList(
+                recipes = uiState.favoriteRecipes,
+                onRecipeClick = { }
+            )
+        }
     }
 }

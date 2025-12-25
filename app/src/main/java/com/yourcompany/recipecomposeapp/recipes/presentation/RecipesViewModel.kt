@@ -3,7 +3,7 @@ package com.yourcompany.recipecomposeapp.recipes.presentation
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.yourcompany.recipecomposeapp.categories.data.RecipesRepositoryStub
+import com.yourcompany.recipecomposeapp.categories.data.repository.RecipesRepository
 import com.yourcompany.recipecomposeapp.recipes.presentation.model.RecipesUiState
 import com.yourcompany.recipecomposeapp.recipes.presentation.model.toUiModel
 import com.yourcompany.recipecomposeapp.utils.Constants
@@ -16,7 +16,8 @@ import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
 class RecipesViewModel(
-    savedStateHandle: SavedStateHandle
+    savedStateHandle: SavedStateHandle,
+    private val repository: RecipesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecipesUiState.Default)
@@ -33,7 +34,6 @@ class RecipesViewModel(
     )
 
     init {
-
         _uiState.update { state ->
             state.copy(
                 categoryTitle = categoryTitle,
@@ -60,7 +60,8 @@ class RecipesViewModel(
             try {
                 _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-                val recipesDto = RecipesRepositoryStub.getRecipesByCategoryId(categoryId)
+                val recipesDto = repository.getRecipesByCategory(categoryId)
+
                 val recipes = recipesDto.map { it.toUiModel() }
 
                 _uiState.update { state ->
@@ -70,6 +71,7 @@ class RecipesViewModel(
                     )
                 }
             } catch (e: Exception) {
+
                 _uiState.update { state ->
                     state.copy(
                         isLoading = false,

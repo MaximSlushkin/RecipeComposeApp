@@ -3,7 +3,7 @@ package com.yourcompany.recipecomposeapp.favorites.ui.presentaion
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.yourcompany.recipecomposeapp.categories.data.RecipesRepositoryStub
+import com.yourcompany.recipecomposeapp.categories.data.repository.RecipesRepository
 import com.yourcompany.recipecomposeapp.favorites.ui.presentaion.model.FavoritesUiState
 import com.yourcompany.recipecomposeapp.recipes.presentation.model.toUiModel
 import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
@@ -15,11 +15,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class FavoritesViewModel(
-    application: Application
+    application: Application,
+    private val repository: RecipesRepository
 ) : AndroidViewModel(application) {
 
     private val favoriteManager = FavoriteDataStoreManager(application)
-    private val repository = RecipesRepositoryStub
 
     private val _uiState = MutableStateFlow(FavoritesUiState(isLoading = true))
     val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
@@ -34,11 +34,11 @@ class FavoritesViewModel(
             favoriteManager.getFavoriteIdsFlow()
                 .map { favoriteIds ->
                     favoriteIds.mapNotNull { recipeIdStr ->
+
                         val recipeId = recipeIdStr.toIntOrNull()
                         recipeId?.let { id ->
-                            repository.getCategories().flatMap { category ->
-                                repository.getRecipesByCategoryId(category.id)
-                            }.find { it.id == id }?.toUiModel()
+                            val recipeDto = repository.getRecipe(id)
+                            recipeDto?.toUiModel()
                         }
                     }
                 }
@@ -66,9 +66,7 @@ class FavoritesViewModel(
                 val favoriteRecipes = favoriteIds.mapNotNull { recipeIdStr ->
                     val recipeId = recipeIdStr.toIntOrNull()
                     recipeId?.let { id ->
-                        repository.getCategories().flatMap { category ->
-                            repository.getRecipesByCategoryId(category.id)
-                        }.find { it.id == id }?.toUiModel()
+                        repository.getRecipe(id)?.toUiModel()
                     }
                 }
 

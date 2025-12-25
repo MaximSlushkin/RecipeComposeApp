@@ -15,6 +15,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,10 +32,10 @@ import com.yourcompany.recipecomposeapp.recipes.presentation.model.RecipeUiModel
 
 @Composable
 fun RecipesScreen(
+    viewModel: RecipesViewModel,
     modifier: Modifier = Modifier,
     onRecipeClick: (Int) -> Unit = { }
 ) {
-    val viewModel: RecipesViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
@@ -177,5 +178,7 @@ private fun EmptyState() {
 @Preview(showBackground = true)
 @Composable
 fun RecipesScreenPreview() {
-    RecipesScreen()
+
+    val viewModel: RecipesViewModel = viewModel()
+    RecipesScreen(viewModel = viewModel)
 }
