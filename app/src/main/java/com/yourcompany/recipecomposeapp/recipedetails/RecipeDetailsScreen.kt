@@ -29,6 +29,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.yourcompany.recipecomposeapp.R
+import com.yourcompany.recipecomposeapp.categories.data.repository.RecipesRepository
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
 import com.yourcompany.recipecomposeapp.ingredients.IngredientItem
 import com.yourcompany.recipecomposeapp.ingredients.InstructionItem
@@ -42,6 +43,7 @@ import com.yourcompany.recipecomposeapp.utils.ShareUtils
 @Composable
 fun RecipeDetailsScreen(
     recipeId: Int,
+    repository: RecipesRepository,
     modifier: Modifier = Modifier
 ) {
     val application = LocalContext.current.applicationContext as? Application
@@ -65,7 +67,11 @@ fun RecipeDetailsScreen(
     }
 
     val viewModel: RecipeDetailsViewModel = viewModel(
-        factory = RecipeDetailsViewModel.provideFactory(application, recipeId)
+        factory = RecipeDetailsViewModel.provideFactory(
+            application = application,
+            recipeId = recipeId,
+            repository = repository
+        )
     )
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
