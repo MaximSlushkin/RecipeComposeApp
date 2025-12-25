@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.lifecycleScope
 import com.yourcompany.recipecomposeapp.core.network.NetworkConfig
 import com.yourcompany.recipecomposeapp.data.model.CategoryDto
 import com.yourcompany.recipecomposeapp.data.model.RecipeDto
@@ -21,8 +22,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.Serializable
 
 class MainActivity : ComponentActivity() {
     private var deepLinkIntent by mutableStateOf<Intent?>(null)
@@ -30,38 +29,22 @@ class MainActivity : ComponentActivity() {
 
     private val recipesApiService = NetworkConfig.recipesApiService
 
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
-
-    private var networkJobs: List<Job> = emptyList()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         Log.d(TAG, "Метод onCreate() выполняется на потоке: ${Thread.currentThread().name}")
 
-        val categoriesJob = coroutineScope.launch {
+        lifecycleScope.launch {
             Log.d(TAG, "Выполняю запрос категорий на корутине: ${Thread.currentThread().name}")
             executeCategoryRequest()
         }
-
-        networkJobs = listOf(categoriesJob)
 
         handleDeepLinkIntent(intent)
         setContent {
             RecipesApp(deepLinkIntent = deepLinkIntent)
 
-            LaunchedEffect(Unit) {
-
-            }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-
-        networkJobs.forEach { it.cancel() }
-        Log.d(TAG, "Все сетевые корутины отменены")
     }
 
     private suspend fun executeCategoryRequest() {
@@ -74,7 +57,6 @@ class MainActivity : ComponentActivity() {
             processCategories(categories)
 
         } catch (e: Exception) {
-
             Log.e(TAG, "Ошибка запроса категорий через Retrofit: ${e.message}", e)
         }
     }
@@ -88,8 +70,8 @@ class MainActivity : ComponentActivity() {
             }
 
             val recipeJobs = categories.map { category ->
-                coroutineScope.async {
-                    Log.d(TAG, "Запускаю запрос рецептов для категории '${category.title}' на корутине: ${Thread.currentThread().name}")
+                lifecycleScope.async {
+                    Log.d(TAG, "Запускаю запрос рецептов для категории '${category.title}'")
                     fetchRecipesForCategory(category)
                 }
             }

@@ -10,36 +10,35 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
 
-@OptIn(ExperimentalSerializationApi::class)
 object NetworkConfig {
 
+    var isDebug: Boolean = false
     const val BASE_URL = "https://recipes.androidsprint.ru/api/"
 
     private val jsonParser = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
         isLenient = true
-        explicitNulls = false
     }
 
     private val jsonContentType = "application/json".toMediaType()
 
     private fun createOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
-            .addInterceptor(createLoggingInterceptor())
-            .build()
-    }
 
-    private fun createLoggingInterceptor(): HttpLoggingInterceptor {
-        return HttpLoggingInterceptor().apply {
-
-            level = HttpLoggingInterceptor.Level.BODY
+        if (isDebug) {
+            val loggingInterceptor = HttpLoggingInterceptor()
+            loggingInterceptor.level = HttpLoggingInterceptor.Level.BODY
+            builder.addInterceptor(loggingInterceptor)
         }
+
+        return builder.build()
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
