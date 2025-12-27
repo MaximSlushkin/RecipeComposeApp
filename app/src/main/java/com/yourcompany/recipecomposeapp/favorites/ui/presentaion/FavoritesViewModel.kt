@@ -3,10 +3,12 @@ package com.yourcompany.recipecomposeapp.favorites.ui.presentaion
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.yourcompany.recipecomposeapp.categories.data.RecipesRepositoryStub
+import com.yourcompany.recipecomposeapp.categories.data.repository.RecipesRepository
 import com.yourcompany.recipecomposeapp.favorites.ui.presentaion.model.FavoritesUiState
 import com.yourcompany.recipecomposeapp.recipes.presentation.model.toUiModel
 import com.yourcompany.recipecomposeapp.utils.FavoriteDataStoreManager
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,11 +17,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class FavoritesViewModel(
-    application: Application
+    application: Application,
+    private val repository: RecipesRepository
 ) : AndroidViewModel(application) {
 
     private val favoriteManager = FavoriteDataStoreManager(application)
-    private val repository = RecipesRepositoryStub
 
     private val _uiState = MutableStateFlow(FavoritesUiState(isLoading = true))
     val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
@@ -33,14 +35,14 @@ class FavoritesViewModel(
         viewModelScope.launch {
             favoriteManager.getFavoriteIdsFlow()
                 .map { favoriteIds ->
-                    favoriteIds.mapNotNull { recipeIdStr ->
-                        val recipeId = recipeIdStr.toIntOrNull()
-                        recipeId?.let { id ->
-                            repository.getCategories().flatMap { category ->
-                                repository.getRecipesByCategoryId(category.id)
-                            }.find { it.id == id }?.toUiModel()
+                    favoriteIds.map { recipeIdStr ->
+                        async {
+                            val recipeId = recipeIdStr.toIntOrNull()
+                            recipeId?.let { id ->
+                                repository.getRecipe(id)?.toUiModel()
+                            }
                         }
-                    }
+                    }.awaitAll().filterNotNull()
                 }
                 .collect { favoriteRecipes ->
                     _uiState.update { currentState ->
@@ -63,14 +65,15 @@ class FavoritesViewModel(
 
             try {
                 val favoriteIds = favoriteManager.getAllFavorites()
-                val favoriteRecipes = favoriteIds.mapNotNull { recipeIdStr ->
-                    val recipeId = recipeIdStr.toIntOrNull()
-                    recipeId?.let { id ->
-                        repository.getCategories().flatMap { category ->
-                            repository.getRecipesByCategoryId(category.id)
-                        }.find { it.id == id }?.toUiModel()
+
+                val favoriteRecipes = favoriteIds.map { recipeIdStr ->
+                    async {
+                        val recipeId = recipeIdStr.toIntOrNull()
+                        recipeId?.let { id ->
+                            repository.getRecipe(id)?.toUiModel()
+                        }
                     }
-                }
+                }.awaitAll().filterNotNull()
 
                 _uiState.update { currentState ->
                     currentState.copy(
