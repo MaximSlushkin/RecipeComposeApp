@@ -66,13 +66,17 @@ fun RecipeDetailsScreen(
         return
     }
 
-    val viewModel: RecipeDetailsViewModel = viewModel(
-        factory = RecipeDetailsViewModel.provideFactory(
+    val viewModel: RecipeDetailsViewModel = remember(recipeId) {
+
+        val savedStateHandle = androidx.lifecycle.SavedStateHandle().apply {
+            set(com.yourcompany.recipecomposeapp.utils.Constants.PARAM_RECIPE_ID, recipeId)
+        }
+        RecipeDetailsViewModel(
             application = application,
-            recipeId = recipeId,
+            savedStateHandle = savedStateHandle,
             repository = repository
         )
-    )
+    }
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -94,6 +98,7 @@ fun RecipeDetailsScreen(
                 errorMessage = uiState.errorMessage ?: "Произошла неизвестная ошибка",
                 onRetry = { viewModel.loadRecipe() }
             )
+
             uiState.recipe != null -> {
                 val currentRecipe = uiState.recipe ?: return
                 RecipeContent(
@@ -115,6 +120,7 @@ fun RecipeDetailsScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             }
+
             else -> EmptyState()
         }
     }
