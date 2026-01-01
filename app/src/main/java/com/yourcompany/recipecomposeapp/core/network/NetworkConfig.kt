@@ -14,25 +14,45 @@ import java.util.concurrent.TimeUnit
 
 object NetworkConfig {
 
-    var isDebug: Boolean = false
+    private var _isDebug: Boolean = false
+    private val isDebug: Boolean get() = _isDebug
+
     const val BASE_URL = "https://recipes.androidsprint.ru/api/"
 
     private const val TAG = "NetworkConfig"
     private const val LOG_TAG = "HTTP_LOG"
 
-    private val jsonParser = Json {
-        ignoreUnknownKeys = true
-        coerceInputValues = true
-        isLenient = true
-        explicitNulls = false
+    private val jsonParser by lazy {
+        Json {
+            ignoreUnknownKeys = true
+            coerceInputValues = true
+            isLenient = true
+            explicitNulls = false
+        }
     }
 
-    private val jsonContentType = "application/json".toMediaType()
+    private val jsonContentType by lazy { "application/json".toMediaType() }
+
+    private lateinit var _okHttpClient: OkHttpClient
+    private lateinit var _retrofit: Retrofit
+    private lateinit var _recipesApiService: RecipesApiService
+
+    fun initialize(debug: Boolean) {
+        _isDebug = debug
+        Log.d(TAG, "NetworkConfig initialized with debug mode: $debug")
+
+        _okHttpClient = createOkHttpClient()
+        _retrofit = createRetrofit()
+        _recipesApiService = _retrofit.create(RecipesApiService::class.java)
+
+        Log.d(TAG, "Network components initialized successfully")
+    }
 
     private fun createOkHttpClient(): OkHttpClient {
         Log.d(TAG, "Creating OkHttpClient with debug mode: $isDebug")
 
         val builder = OkHttpClient.Builder()
+
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -48,41 +68,11 @@ object NetworkConfig {
             }
 
             builder.addInterceptor(loggingInterceptor)
-
-            builder.addNetworkInterceptor(createNetworkInterceptor())
         }
 
         builder.addInterceptor(createCommonHeadersInterceptor())
 
         return builder.build()
-    }
-
-    private fun createNetworkInterceptor(): Interceptor {
-        return Interceptor { chain ->
-            val request = chain.request()
-            val startTime = System.nanoTime()
-
-            Log.d(LOG_TAG, " Sending request: ${request.method} ${request.url}")
-            Log.d(LOG_TAG, " Headers: ${request.headers}")
-
-            try {
-                val response = chain.proceed(request)
-                val endTime = System.nanoTime()
-                val durationMs = (endTime - startTime) / 1_000_000
-
-                Log.d(LOG_TAG, " Received response: ${response.code} ${response.message}")
-                Log.d(LOG_TAG, " Response time: ${durationMs}ms")
-                Log.d(LOG_TAG, " Response headers: ${response.headers}")
-
-                response
-            } catch (e: Exception) {
-                val endTime = System.nanoTime()
-                val durationMs = (endTime - startTime) / 1_000_000
-
-                Log.e(LOG_TAG, " Request failed after ${durationMs}ms", e)
-                throw e
-            }
-        }
     }
 
     private fun createCommonHeadersInterceptor(): Interceptor {
@@ -100,24 +90,27 @@ object NetworkConfig {
     }
 
     @OptIn(ExperimentalSerializationApi::class)
-    private val retrofit: Retrofit by lazy {
-        Log.d(TAG, "Initializing Retrofit with base URL: $BASE_URL")
+    private fun createRetrofit(): Retrofit {
+        Log.d(TAG, "Creating Retrofit with base URL: $BASE_URL")
 
-        Retrofit.Builder()
+        return Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .client(createOkHttpClient())
+            .client(_okHttpClient)
             .addConverterFactory(jsonParser.asConverterFactory(jsonContentType))
             .build()
     }
 
-    val recipesApiService: RecipesApiService by lazy {
-        retrofit.create(RecipesApiService::class.java).also {
-            Log.d(TAG, "RecipesApiService initialized")
+    val recipesApiService: RecipesApiService
+        get() {
+            if (!::_recipesApiService.isInitialized) {
+                throw IllegalStateException(
+                    "NetworkConfig must be initialized before accessing recipesApiService. " +
+                            "Call NetworkConfig.initialize() first."
+                )
+            }
+            return _recipesApiService
         }
-    }
 
-    fun setDebugMode(debug: Boolean) {
-        isDebug = debug
-        Log.d(TAG, "Debug mode set to: $debug")
-    }
+    val isInitialized: Boolean
+        get() = ::_recipesApiService.isInitialized
 }

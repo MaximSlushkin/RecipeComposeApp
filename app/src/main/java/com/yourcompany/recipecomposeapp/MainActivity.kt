@@ -20,15 +20,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        NetworkConfig.setDebugMode(BuildConfig.DEBUG)
+        NetworkConfig.initialize(BuildConfig.DEBUG)
 
         handleDeepLinkIntent(intent)
         setContent {
             RecipesApp(deepLinkIntent = deepLinkIntent)
         }
-
-        android.util.Log.d("MainActivity",
-            "App started. BuildConfig.DEBUG: ${BuildConfig.DEBUG}")
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -40,7 +37,6 @@ class MainActivity : ComponentActivity() {
     private fun handleDeepLinkIntent(intent: Intent?) {
         intent?.data?.let {
             deepLinkIntent = intent
-            android.util.Log.d("MainActivity", "Deep link handled: ${intent.data}")
         }
     }
 }
