@@ -1,5 +1,6 @@
 package com.yourcompany.recipecomposeapp
 
+import com.yourcompany.recipecomposeapp.BuildConfig
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -19,7 +20,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        NetworkConfig.isDebug = false
+        NetworkConfig.initialize(BuildConfig.DEBUG)
 
         handleDeepLinkIntent(intent)
         setContent {
@@ -34,7 +35,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleDeepLinkIntent(intent: Intent?) {
-        intent?.data?.let { deepLinkIntent = intent }
+        intent?.data?.let {
+            deepLinkIntent = intent
+        }
     }
 }
 
