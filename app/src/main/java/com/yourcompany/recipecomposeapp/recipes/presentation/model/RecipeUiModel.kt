@@ -23,7 +23,7 @@ data class RecipeUiModel(
 fun RecipeDto.toUiModel() = RecipeUiModel(
     id = id,
     title = title,
-    imageUrl = if (imageUrl.startsWith("http")) imageUrl else Constants.ASSETS_URI_PREFIX + imageUrl,
+    imageUrl = Constants.getFullImageUrl(imageUrl),
     ingredients = ingredients.map { it.toUiModel() },
     method = method,
     servings = servings,

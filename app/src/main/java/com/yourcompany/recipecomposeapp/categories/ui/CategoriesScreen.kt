@@ -114,7 +114,7 @@ private fun CategoriesGrid(
             key = { category -> category.id }
         ) { category ->
             CategoryItem(
-                imageRes = category.imageUrl,
+                category.imageUrl,
                 header = category.title,
                 description = category.description,
                 onClick = {

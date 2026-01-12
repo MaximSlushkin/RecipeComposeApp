@@ -1,6 +1,8 @@
 package com.yourcompany.recipecomposeapp.utils
 
 object Constants {
+
+    const val IMAGES_BASE_URL = "https://recipes.androidsprint.ru/api/images/"
     const val ASSETS_URI_PREFIX = "file:///android_asset/"
 
     const val DEEP_LINK_SCHEME = "recipeapp"
@@ -17,5 +19,13 @@ object Constants {
 
     fun createRecipeDeepLink(recipeId: Int): String {
         return "$DEEP_LINK_BASE_URL/recipe/$recipeId"
+    }
+
+    fun getFullImageUrl(fileName: String): String {
+        return if (fileName.startsWith("http")) {
+            fileName
+        } else {
+            IMAGES_BASE_URL + fileName
+        }
     }
 }
