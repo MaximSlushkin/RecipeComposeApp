@@ -4,6 +4,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -29,42 +34,57 @@ fun RecipeImage(
 ) {
     val context = LocalContext.current
 
-    val imageRequest = ImageRequest.Builder(context)
-        .data(imageUrl)
-        .size(coil3.size.Size.ORIGINAL)
-        .crossfade(true)
-        .crossfade(300)
-        .apply {
-            if (cornerRadius > 0) {
-                transformations(RoundedCornersTransformation(cornerRadius))
+    val imageRequest = remember(imageUrl, cornerRadius) {
+        ImageRequest.Builder(context)
+            .data(imageUrl)
+            .size(coil3.size.Size.ORIGINAL)
+            .crossfade(true)
+            .crossfade(300)
+            .apply {
+                if (cornerRadius > 0) {
+                    transformations(RoundedCornersTransformation(cornerRadius))
+                }
             }
-        }
-        .build()
+            .build()
+    }
+
+    var isLoading by remember { mutableStateOf(true) }
+    var hasError by remember { mutableStateOf(false) }
 
     val painter = rememberAsyncImagePainter(
         model = imageRequest,
         onState = { state ->
             when (state) {
                 is AsyncImagePainter.State.Loading -> {
+                    isLoading = true
+                    hasError = false
                 }
 
                 is AsyncImagePainter.State.Success -> {
+                    isLoading = false
+                    hasError = false
                 }
 
                 is AsyncImagePainter.State.Error -> {
+                    isLoading = false
+                    hasError = true
                 }
 
                 else -> {
+                    isLoading = false
                 }
             }
         }
     )
 
-    val isLoading = painter.state is AsyncImagePainter.State.Loading
-    val hasError = painter.state is AsyncImagePainter.State.Error
+    LaunchedEffect(imageUrl) {
+        kotlinx.coroutines.delay(10000)
+        if (isLoading) {
+            isLoading = false
+        }
+    }
 
     Box(modifier = modifier) {
-
         AsyncImage(
             model = imageRequest,
             contentDescription = contentDescription,
@@ -72,9 +92,8 @@ fun RecipeImage(
             contentScale = contentScale,
             placeholder = painterResource(R.drawable.img_placeholder),
             error = painterResource(R.drawable.img_error),
-            onLoading = { },
             onSuccess = { },
-            onError = {  }
+            onError = { }
         )
 
         if (isLoading && showLoadingIndicator) {
@@ -86,7 +105,7 @@ fun RecipeImage(
             }
         }
 
-        if (hasError) {
+        if (hasError && !isLoading) {
         }
     }
 }
@@ -101,8 +120,8 @@ fun SimpleRecipeImage(
 ) {
     val context = LocalContext.current
 
-    AsyncImage(
-        model = ImageRequest.Builder(context)
+    val imageRequest = remember(imageUrl, cornerRadius) {
+        ImageRequest.Builder(context)
             .data(imageUrl)
             .crossfade(true)
             .crossfade(300)
@@ -111,7 +130,11 @@ fun SimpleRecipeImage(
                     transformations(RoundedCornersTransformation(cornerRadius))
                 }
             }
-            .build(),
+            .build()
+    }
+
+    AsyncImage(
+        model = imageRequest,
         contentDescription = contentDescription,
         placeholder = painterResource(R.drawable.img_placeholder),
         error = painterResource(R.drawable.img_error),
