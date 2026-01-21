@@ -16,73 +16,74 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
 import com.yourcompany.recipecomposeapp.R
+import com.yourcompany.recipecomposeapp.core.ui.SimpleRecipeImage
 
 @Composable
 fun CategoryItem(
-    imageRes: Any,
+    imageUrl: String,
     header: String,
     description: String,
     onClick: () -> Unit,
 ) {
-        Card(
-            modifier = Modifier
-                .clickable { onClick() }
-                .height(220.dp)
-                .width(156.dp),
-            shape = RoundedCornerShape(
-                size = dimensionResource(R.dimen.halfBasicCornerRadius)
-            ),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
+    Card(
+        modifier = Modifier
+            .clickable { onClick() }
+            .height(220.dp)
+            .width(156.dp),
+        shape = RoundedCornerShape(
+            size = dimensionResource(R.dimen.halfBasicCornerRadius)
+        ),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                AsyncImage(
-                    model = imageRes,
-                    placeholder = painterResource(R.drawable.img_placeholder),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxWidth().height(130.dp),
-                    contentScale = ContentScale.Crop,
-                )
-                Text(
-                    text = header.uppercase(),
-                    modifier = Modifier.padding(dimensionResource(R.dimen.cardPadding)),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    text = description,
-                    maxLines = 3,
-                    modifier = Modifier
-                        .padding(
-                            start = dimensionResource(R.dimen.cardPadding),
-                            end = dimensionResource(R.dimen.cardPadding),
-                            bottom = dimensionResource(R.dimen.cardPadding)
-                        )
-                        .height(50.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Start,
-                )
-            }
+            SimpleRecipeImage(
+                imageUrl = imageUrl,
+                contentDescription = "Изображение категории: $header",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp),
+                contentScale = ContentScale.Crop,
+                cornerRadius = dimensionResource(R.dimen.halfBasicCornerRadius).value
+            )
+
+            Text(
+                text = header.uppercase(),
+                modifier = Modifier.padding(dimensionResource(R.dimen.cardPadding)),
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = description,
+                maxLines = 3,
+                modifier = Modifier
+                    .padding(
+                        start = dimensionResource(R.dimen.cardPadding),
+                        end = dimensionResource(R.dimen.cardPadding),
+                        bottom = dimensionResource(R.dimen.cardPadding)
+                    )
+                    .height(50.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                textAlign = TextAlign.Start,
+            )
         }
+    }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun CategoryItemPreview() {
-    val imageRes = R.drawable.img_error
     CategoryItem(
-        imageRes = imageRes,
+        imageUrl = "https://recipes.androidsprint.ru/api/images/burgers.png",
         header = "Бургеры",
         description = "Рецепты всех популярных видов бургеров",
         onClick = {}
