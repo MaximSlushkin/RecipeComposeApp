@@ -12,7 +12,7 @@ import com.yourcompany.recipecomposeapp.data.database.entity.CategoryEntity
 @Database(
     entities = [CategoryEntity::class],
     version = 1,
-    exportSchema = true
+    exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class RecipesDatabase : RoomDatabase() {
