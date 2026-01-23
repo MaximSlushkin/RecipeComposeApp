@@ -24,6 +24,7 @@ import com.yourcompany.recipecomposeapp.core.ui.navigation.Destination
 import com.yourcompany.recipecomposeapp.recipes.ui.RecipesScreen
 import com.yourcompany.recipecomposeapp.recipedetails.RecipeDetailsScreen
 import com.yourcompany.recipecomposeapp.core.network.NetworkConfig
+import com.yourcompany.recipecomposeapp.data.database.RecipesDatabase
 import com.yourcompany.recipecomposeapp.recipes.presentation.RecipesViewModel
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 import com.yourcompany.recipecomposeapp.utils.Constants
@@ -34,6 +35,10 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
     RecipesAppTheme {
         val navController = rememberNavController()
         val context = LocalContext.current
+
+        val database = remember {
+            RecipesDatabase.getInstance(context)
+        }
 
         LaunchedEffect(Unit) {
             if (!NetworkConfig.isInitialized) {
