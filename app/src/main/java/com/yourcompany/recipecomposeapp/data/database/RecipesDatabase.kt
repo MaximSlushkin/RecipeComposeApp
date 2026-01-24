@@ -7,17 +7,23 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.yourcompany.recipecomposeapp.data.database.converter.Converters
 import com.yourcompany.recipecomposeapp.data.database.dao.CategoryDao
+import com.yourcompany.recipecomposeapp.data.database.dao.RecipeDao
 import com.yourcompany.recipecomposeapp.data.database.entity.CategoryEntity
+import com.yourcompany.recipecomposeapp.data.database.entity.RecipeEntity
 
 @Database(
-    entities = [CategoryEntity::class],
-    version = 1,
+    entities = [
+        CategoryEntity::class,
+        RecipeEntity::class
+    ],
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class RecipesDatabase : RoomDatabase() {
 
     abstract fun categoryDao(): CategoryDao
+    abstract fun recipeDao(): RecipeDao
 
     companion object {
 
@@ -28,7 +34,6 @@ abstract class RecipesDatabase : RoomDatabase() {
 
         fun getInstance(context: Context): RecipesDatabase {
             return INSTANCE ?: synchronized(this) {
-
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     RecipesDatabase::class.java,
