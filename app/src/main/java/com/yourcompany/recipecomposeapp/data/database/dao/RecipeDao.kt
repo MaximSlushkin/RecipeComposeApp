@@ -18,8 +18,14 @@ interface RecipeDao {
     @Query("SELECT * FROM recipes WHERE id = :recipeId")
     suspend fun getRecipeById(recipeId: Int): RecipeEntity?
 
+    @Query("SELECT * FROM recipes WHERE id = :recipeId")
+    fun getRecipeFlowById(recipeId: Int): Flow<RecipeEntity?>
+
     @Query("SELECT * FROM recipes WHERE category_id = :categoryId ORDER BY title COLLATE NOCASE ASC")
     fun getRecipesByCategory(categoryId: Int): Flow<List<RecipeEntity>>
+
+    @Query("SELECT * FROM recipes WHERE id IN (:recipeIds) ORDER BY title COLLATE NOCASE ASC")
+    fun getRecipesByIds(recipeIds: List<Int>): Flow<List<RecipeEntity>>
 
     @Query("SELECT * FROM recipes WHERE title LIKE '%' || :query || '%' ORDER BY title COLLATE NOCASE ASC")
     fun searchRecipes(query: String): Flow<List<RecipeEntity>>
