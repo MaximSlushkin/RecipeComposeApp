@@ -7,17 +7,21 @@ import kotlinx.serialization.json.Json
 
 class Converters {
 
+    private companion object {
+        const val STRING_LIST_DELIMITER = "|||"
+    }
+
     @TypeConverter
     fun fromStringList(value: List<String>): String {
-        return Json.encodeToString(value)
+        return value.joinToString(STRING_LIST_DELIMITER)
     }
 
     @TypeConverter
     fun toStringList(value: String): List<String> {
-        return try {
-            Json.decodeFromString(value)
-        } catch (e: Exception) {
+        return if (value.isEmpty()) {
             emptyList()
+        } else {
+            value.split(STRING_LIST_DELIMITER)
         }
     }
 
@@ -37,15 +41,19 @@ class Converters {
 
     @TypeConverter
     fun fromIntList(value: List<Int>): String {
-        return Json.encodeToString(value)
+        return value.joinToString(STRING_LIST_DELIMITER)
     }
 
     @TypeConverter
     fun toIntList(value: String): List<Int> {
-        return try {
-            Json.decodeFromString(value)
-        } catch (e: Exception) {
+        return if (value.isEmpty()) {
             emptyList()
+        } else {
+            try {
+                value.split(STRING_LIST_DELIMITER).map { it.toInt() }
+            } catch (e: Exception) {
+                emptyList()
+            }
         }
     }
 }
