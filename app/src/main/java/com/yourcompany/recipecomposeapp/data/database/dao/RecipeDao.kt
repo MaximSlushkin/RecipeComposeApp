@@ -16,10 +16,7 @@ interface RecipeDao {
     fun getAllRecipes(): Flow<List<RecipeEntity>>
 
     @Query("SELECT * FROM recipes WHERE id = :recipeId")
-    suspend fun getRecipeById(recipeId: Int): RecipeEntity?
-
-    @Query("SELECT * FROM recipes WHERE id = :recipeId")
-    fun getRecipeFlowById(recipeId: Int): Flow<RecipeEntity?>
+    fun getRecipeById(recipeId: Int): Flow<RecipeEntity?>
 
     @Query("SELECT * FROM recipes WHERE category_id = :categoryId ORDER BY title COLLATE NOCASE ASC")
     fun getRecipesByCategory(categoryId: Int): Flow<List<RecipeEntity>>
@@ -33,10 +30,8 @@ interface RecipeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRecipe(recipe: RecipeEntity)
 
-    @Transaction
-    suspend fun insertAllRecipes(recipes: List<RecipeEntity>) {
-        recipes.forEach { insertRecipe(it) }
-    }
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertRecipes(recipes: List<RecipeEntity>)
 
     @Update
     suspend fun updateRecipe(recipe: RecipeEntity)
