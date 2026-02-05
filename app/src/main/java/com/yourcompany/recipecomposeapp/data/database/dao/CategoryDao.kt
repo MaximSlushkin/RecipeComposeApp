@@ -20,10 +20,8 @@ interface CategoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCategory(category: CategoryEntity)
 
-    @Transaction
-    suspend fun insertAllCategories(categories: List<CategoryEntity>) {
-        categories.forEach { insertCategory(it) }
-    }
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCategories(categories: List<CategoryEntity>)
 
     @Query("DELETE FROM categories")
     suspend fun deleteAllCategories()
