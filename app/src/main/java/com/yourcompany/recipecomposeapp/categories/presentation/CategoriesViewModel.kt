@@ -1,6 +1,7 @@
 package com.yourcompany.recipecomposeapp.categories.presentation
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.yourcompany.recipecomposeapp.categories.data.repository.RecipesRepository
 import com.yourcompany.recipecomposeapp.categories.presentation.model.CategoriesUiState
@@ -8,6 +9,9 @@ import com.yourcompany.recipecomposeapp.categories.presentation.model.toUiModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -24,43 +28,78 @@ class CategoriesViewModel(
     }
 
     private fun loadCategories() {
+        viewModelScope.launch {
+            repository.getCategories()
+                .onStart {
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isLoading = true,
+                            error = null
+                        )
+                    }
+                }
+                .catch { exception ->
 
-        _uiState.update { currentState ->
-            currentState.copy(
-                isLoading = true,
-                error = null
-            )
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isLoading = false,
+                            error = "Ошибка загрузки категорий: ${exception.message ?: "Неизвестная ошибка"}",
+                            isEmpty = true
+                        )
+                    }
+                }
+                .collectLatest { categoriesDto ->
+                    val categories = categoriesDto.map { it.toUiModel() }
+
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            categories = categories,
+                            isLoading = false,
+                            error = null,
+                            isEmpty = categories.isEmpty()
+                        )
+                    }
+                }
         }
+    }
 
+    fun refreshCategories() {
         viewModelScope.launch {
             try {
-                val categoriesDto = repository.getCategories()
-
-                val categories = categoriesDto.map { it.toUiModel() }
-
                 _uiState.update { currentState ->
                     currentState.copy(
-                        categories = categories,
-                        isLoading = false,
-                        error = null,
-                        isEmpty = categories.isEmpty()
+                        isLoading = true,
+                        error = null
                     )
                 }
+
+                repository.refreshCategories()
+
 
             } catch (e: Exception) {
 
                 _uiState.update { currentState ->
                     currentState.copy(
                         isLoading = false,
-                        error = "Не удалось загрузить категории: ${e.message ?: "Неизвестная ошибка"}",
-                        isEmpty = true
+                        error = "Ошибка обновления: ${e.message ?: "Неизвестная ошибка"}"
                     )
                 }
             }
         }
     }
 
-    fun refreshCategories() {
+    fun retry() {
         loadCategories()
+    }
+
+    companion object {
+        fun provideFactory(repository: RecipesRepository): ViewModelProvider.Factory {
+            return object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return CategoriesViewModel(repository) as T
+                }
+            }
+        }
     }
 }

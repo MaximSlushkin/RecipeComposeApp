@@ -9,8 +9,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavBackStackEntry
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -37,7 +35,7 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
         val context = LocalContext.current
 
         val database = remember {
-            RecipesDatabase.getInstance(context)
+            RecipesDatabase.buildDatabase(context)
         }
 
         LaunchedEffect(Unit) {
@@ -47,7 +45,10 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
         }
 
         val repository = remember {
-            RecipesRepositoryImpl(apiService = NetworkConfig.recipesApiService)
+            RecipesRepositoryImpl(
+                apiService = NetworkConfig.recipesApiService,
+                database = database
+            )
         }
 
         LaunchedEffect(deepLinkIntent) {
@@ -116,7 +117,7 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                             )
                             navController.navigate(route)
                         },
-                        repository = repository
+                        repository = repository  // передаем репозиторий
                     )
                 }
 

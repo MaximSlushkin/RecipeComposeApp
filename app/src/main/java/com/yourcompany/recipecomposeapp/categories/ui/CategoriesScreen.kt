@@ -18,7 +18,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -26,10 +25,9 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.categories.data.repository.RecipesRepository
-import com.yourcompany.recipecomposeapp.categories.data.repository.RecipesRepositoryImpl
-import com.yourcompany.recipecomposeapp.core.network.NetworkConfig
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
 import com.yourcompany.recipecomposeapp.categories.presentation.CategoriesViewModel
 import com.yourcompany.recipecomposeapp.categories.presentation.model.CategoryUiModel
@@ -38,16 +36,11 @@ import com.yourcompany.recipecomposeapp.categories.presentation.model.CategoryUi
 fun CategoriesScreen(
     modifier: Modifier = Modifier,
     onCategoryClick: (Int, String, String) -> Unit = { _, _, _ -> },
-    repository: RecipesRepository? = null
+    repository: RecipesRepository
 ) {
-    val localRepository = repository ?: remember {
-
-        RecipesRepositoryImpl(apiService = NetworkConfig.recipesApiService)
-    }
-
-    val viewModel: CategoriesViewModel = remember {
-        CategoriesViewModel(repository = localRepository)
-    }
+    val viewModel: CategoriesViewModel = viewModel(
+        factory = CategoriesViewModel.provideFactory(repository)
+    )
 
     val uiState by viewModel.uiState.collectAsState()
 
@@ -70,7 +63,7 @@ fun CategoriesScreen(
             uiState.error != null -> {
                 ErrorState(
                     errorMessage = uiState.error ?: "Ошибка",
-                    onRetry = { viewModel.refreshCategories() }
+                    onRetry = { viewModel.retry() }
                 )
             }
 
@@ -200,7 +193,6 @@ private fun EmptyState() {
 @Preview(showBackground = true)
 @Composable
 fun CategoriesScreenPreview() {
-
     Scaffold { innerPadding ->
         val modifier = Modifier.padding(innerPadding)
 

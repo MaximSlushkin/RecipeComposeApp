@@ -10,6 +10,9 @@ import com.yourcompany.recipecomposeapp.utils.Constants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.net.URLDecoder
@@ -41,7 +44,7 @@ class RecipesViewModel(
             )
         }
 
-        loadRecipes(categoryId)
+        loadRecipes()
     }
 
     private fun decodeParameter(encodedParameter: String?, defaultValue: String): String {
@@ -55,27 +58,57 @@ class RecipesViewModel(
         }
     }
 
-    private fun loadRecipes(categoryId: Int) {
+    private fun loadRecipes() {
+        viewModelScope.launch {
+            repository.getRecipesByCategory(categoryId)
+                .onStart {
+                    _uiState.update { state ->
+                        state.copy(
+                            isLoading = true,
+                            errorMessage = null
+                        )
+                    }
+                }
+                .catch { exception ->
+                    _uiState.update { state ->
+                        state.copy(
+                            isLoading = false,
+                            errorMessage = "Ошибка загрузки рецептов: ${exception.message ?: "Неизвестная ошибка"}"
+                        )
+                    }
+                }
+                .collectLatest { recipesDto ->
+                    val recipes = recipesDto.map { it.toUiModel() }
+
+                    _uiState.update { state ->
+                        state.copy(
+                            recipes = recipes,
+                            isLoading = false,
+                            errorMessage = null
+                        )
+                    }
+                }
+        }
+    }
+
+    fun refreshRecipes() {
         viewModelScope.launch {
             try {
-                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-
-                val recipesDto = repository.getRecipesByCategory(categoryId)
-
-                val recipes = recipesDto.map { it.toUiModel() }
-
                 _uiState.update { state ->
                     state.copy(
-                        recipes = recipes,
-                        isLoading = false
+                        isLoading = true,
+                        errorMessage = null
                     )
                 }
+
+                repository.refreshRecipes(categoryId)
+
             } catch (e: Exception) {
 
                 _uiState.update { state ->
                     state.copy(
                         isLoading = false,
-                        errorMessage = "Не удалось загрузить рецепты: ${e.localizedMessage ?: "Неизвестная ошибка"}"
+                        errorMessage = "Ошибка обновления: ${e.localizedMessage}"
                     )
                 }
             }
@@ -83,6 +116,6 @@ class RecipesViewModel(
     }
 
     fun retry() {
-        loadRecipes(categoryId)
+        loadRecipes()
     }
 }
