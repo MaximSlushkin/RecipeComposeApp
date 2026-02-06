@@ -10,7 +10,9 @@ interface RecipesRepository {
 
     fun getRecipesByCategory(categoryId: Int): Flow<List<RecipeDto>>
 
-    suspend fun getRecipe(recipeId: Int): RecipeDto?
+    fun getRecipe(recipeId: Int): Flow<RecipeDto?>
+
+    suspend fun getRecipeSync(recipeId: Int): RecipeDto?
 
     suspend fun refreshCategories()
 

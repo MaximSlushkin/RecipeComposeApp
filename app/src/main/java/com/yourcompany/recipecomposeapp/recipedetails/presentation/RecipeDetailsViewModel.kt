@@ -14,7 +14,9 @@ import com.yourcompany.recipecomposeapp.utils.Constants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -33,7 +35,7 @@ class RecipeDetailsViewModel(
 
     init {
         if (recipeId != -1) {
-            loadRecipe()
+            subscribeToRecipeFlow()
             setupReactiveSubscriptions()
         } else {
             _uiState.update { currentState ->
@@ -51,46 +53,38 @@ class RecipeDetailsViewModel(
             ?: -1
     }
 
-    fun loadRecipe() {
-        if (_uiState.value.recipe != null && _uiState.value.recipe?.id == recipeId) {
-            return
-        }
-
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-
+    private fun subscribeToRecipeFlow() {
         viewModelScope.launch {
-            try {
-                val recipeDto = repository.getRecipe(recipeId)
-
-                if (recipeDto != null) {
-                    val recipe = recipeDto.toUiModel()
-
-                    val savedPortions = savedStateHandle.get<Int>("currentPortions")
-                    val initialPortions = savedPortions ?: recipe.servings
-
-                    _uiState.update { currentState ->
-                        currentState.copy(
-                            recipe = recipe,
-                            currentPortions = initialPortions,
-                            isLoading = false
-                        )
-                    }
-                } else {
+            repository.getRecipe(recipeId)
+                .onStart {
+                    _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+                }
+                .catch { exception ->
                     _uiState.update { currentState ->
                         currentState.copy(
                             isLoading = false,
-                            errorMessage = "Рецепт не найден"
+                            errorMessage = "Ошибка загрузки рецепта: ${exception.localizedMessage}"
                         )
                     }
                 }
-            } catch (e: Exception) {
-                _uiState.update { currentState ->
-                    currentState.copy(
-                        isLoading = false,
-                        errorMessage = "Ошибка загрузки: ${e.localizedMessage}"
-                    )
+                .collect { recipeDto ->
+                    if (recipeDto != null) {
+                        val recipe = recipeDto.toUiModel()
+
+                        val savedPortions = savedStateHandle.get<Int>("currentPortions")
+                        val initialPortions = savedPortions ?: recipe.servings
+
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                recipe = recipe,
+                                currentPortions = initialPortions,
+                                isLoading = false,
+                                errorMessage = null
+                            )
+                        }
+                    } else {
+                    }
                 }
-            }
         }
     }
 
