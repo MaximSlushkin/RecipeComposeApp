@@ -11,7 +11,7 @@ data class CategoryEntity(
     val id: Int,
 
     @ColumnInfo(name = "title")
-    val title: String,
+    val name: String,
 
     @ColumnInfo(name = "description")
     val description: String,
