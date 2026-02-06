@@ -14,7 +14,7 @@ data class CategoryDto(
 fun CategoryDto.toEntity(): CategoryEntity {
     return CategoryEntity(
         id = this.id,
-        title = this.title,
+        name = this.title,
         description = this.description,
         imageUrl = this.imageUrl
     )
@@ -23,7 +23,7 @@ fun CategoryDto.toEntity(): CategoryEntity {
 fun CategoryEntity.toDto(): CategoryDto {
     return CategoryDto(
         id = this.id,
-        title = this.title,
+        title = this.name,
         description = this.description,
         imageUrl = this.imageUrl
     )
