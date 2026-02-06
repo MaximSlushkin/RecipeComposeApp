@@ -81,12 +81,6 @@ fun RecipeDetailsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    LaunchedEffect(recipeId) {
-        if (uiState.recipe?.id != recipeId) {
-            viewModel.loadRecipe()
-        }
-    }
-
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -96,7 +90,9 @@ fun RecipeDetailsScreen(
             uiState.isLoading -> LoadingState()
             uiState.hasError -> ErrorState(
                 errorMessage = uiState.errorMessage ?: "Произошла неизвестная ошибка",
-                onRetry = { viewModel.loadRecipe() }
+                onRetry = {
+                    viewModel.clearError()
+                }
             )
 
             uiState.recipe != null -> {

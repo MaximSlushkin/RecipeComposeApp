@@ -39,7 +39,7 @@ class FavoritesViewModel(
                         async {
                             val recipeId = recipeIdStr.toIntOrNull()
                             recipeId?.let { id ->
-                                repository.getRecipe(id)?.toUiModel()
+                                repository.getRecipeSync(id)?.toUiModel()
                             }
                         }
                     }.awaitAll().filterNotNull()
@@ -70,7 +70,7 @@ class FavoritesViewModel(
                     async {
                         val recipeId = recipeIdStr.toIntOrNull()
                         recipeId?.let { id ->
-                            repository.getRecipe(id)?.toUiModel()
+                            repository.getRecipeSync(id)?.toUiModel()
                         }
                     }
                 }.awaitAll().filterNotNull()
