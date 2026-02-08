@@ -83,6 +83,12 @@ class RecipeDetailsViewModel(
                             )
                         }
                     } else {
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                isLoading = false,
+                                errorMessage = "Рецепт не найден"
+                            )
+                        }
                     }
                 }
         }
@@ -94,7 +100,10 @@ class RecipeDetailsViewModel(
                 favoriteManager.isFavoriteFlow(recipeId),
                 _uiState
             ) { isFavorite, currentState ->
-                currentState.copy(isFavorite = isFavorite)
+                currentState.copy(
+                    isFavorite = isFavorite,
+                    isFavoriteOperationInProgress = false
+                )
             }.collect { newState ->
                 _uiState.update { newState }
             }
