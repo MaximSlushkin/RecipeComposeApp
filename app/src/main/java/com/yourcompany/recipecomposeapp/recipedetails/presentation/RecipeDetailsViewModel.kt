@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -55,7 +57,7 @@ class RecipeDetailsViewModel(
 
     private fun subscribeToRecipeFlow() {
         viewModelScope.launch {
-            repository.getRecipe(recipeId)
+            loadRecipeWithFallback(recipeId)
                 .onStart {
                     _uiState.update { it.copy(isLoading = true, errorMessage = null) }
                 }
@@ -67,10 +69,8 @@ class RecipeDetailsViewModel(
                         )
                     }
                 }
-                .collect { recipeDto ->
-                    if (recipeDto != null) {
-                        val recipe = recipeDto.toUiModel()
-
+                .collect { recipe ->
+                    if (recipe != null) {
                         val savedPortions = savedStateHandle.get<Int>("currentPortions")
                         val initialPortions = savedPortions ?: recipe.servings
 
@@ -93,6 +93,26 @@ class RecipeDetailsViewModel(
                 }
         }
     }
+
+    private suspend fun loadRecipeWithFallback(recipeId: Int) =
+        kotlinx.coroutines.flow.flow<com.yourcompany.recipecomposeapp.recipes.presentation.model.RecipeUiModel?> {
+            val recipeFromFlow = repository.getRecipe(recipeId)
+                .map { it?.toUiModel() }
+                .firstOrNull { it != null }
+
+            if (recipeFromFlow != null) {
+                emit(recipeFromFlow)
+                return@flow
+            }
+
+            val forcedRecipe = repository.forceLoadRecipe(recipeId)?.toUiModel()
+            if (forcedRecipe != null) {
+                emit(forcedRecipe)
+                return@flow
+            }
+
+            emit(null)
+        }
 
     private fun setupReactiveSubscriptions() {
         viewModelScope.launch {

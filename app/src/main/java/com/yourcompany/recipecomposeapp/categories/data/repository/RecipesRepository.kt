@@ -25,4 +25,6 @@ interface RecipesRepository {
     suspend fun getRecipesByCategoryLegacy(categoryId: Int): List<RecipeDto>
 
     suspend fun invalidateCache(categoryId: Int)
+
+    suspend fun forceLoadRecipe(recipeId: Int): RecipeDto?
 }

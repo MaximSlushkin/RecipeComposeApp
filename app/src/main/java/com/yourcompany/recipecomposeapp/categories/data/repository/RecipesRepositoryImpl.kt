@@ -36,6 +36,53 @@ class RecipesRepositoryImpl(
 
     private val refreshScope = CoroutineScope(Dispatchers.IO)
 
+    override suspend fun forceLoadRecipe(recipeId: Int): RecipeDto? {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "Принудительная загрузка рецепта $recipeId из API")
+
+                val existing = recipeDao.getRecipeByIdSync(recipeId)
+                if (existing != null) {
+                    Log.d(TAG, "Рецепт $recipeId найден в БД, возвращаем из кэша")
+                    return@withContext existing.toDto()
+                }
+
+                val categories = apiService.getCategories()
+                Log.d(TAG, "Загружено ${categories.size} категорий для поиска рецепта $recipeId")
+
+                for (category in categories) {
+                    try {
+                        Log.d(
+                            TAG,
+                            "Поиск рецепта $recipeId в категории ${category.id}: ${category.title}"
+                        )
+                        val recipes = apiService.getRecipesByCategory(category.id)
+
+                        recipes.find { it.id == recipeId }?.let { foundRecipe ->
+                            recipeDao.insertRecipe(foundRecipe.toEntity(category.id))
+                            Log.d(
+                                TAG,
+                                "✅ Рецепт $recipeId загружен из категории ${category.id} и сохранен в БД"
+                            )
+                            return@withContext foundRecipe
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Ошибка при загрузке категории ${category.id}: ${e.message}")
+                    }
+                }
+
+                Log.w(TAG, "Рецепт $recipeId не найден ни в одной категории")
+                null
+            } catch (e: Exception) {
+                Log.e(
+                    TAG,
+                    "Критическая ошибка при принудительной загрузке рецепта $recipeId: ${e.message}",
+                    e
+                )
+                null
+            }
+        }
+    }
 
     override fun getCategories(): Flow<List<CategoryDto>> {
 
