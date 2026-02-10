@@ -12,7 +12,6 @@ import com.yourcompany.recipecomposeapp.data.model.toEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -37,6 +36,53 @@ class RecipesRepositoryImpl(
 
     private val refreshScope = CoroutineScope(Dispatchers.IO)
 
+    override suspend fun forceLoadRecipe(recipeId: Int): RecipeDto? {
+        return withContext(Dispatchers.IO) {
+            try {
+                Log.d(TAG, "Принудительная загрузка рецепта $recipeId из API")
+
+                val existing = recipeDao.getRecipeByIdSync(recipeId)
+                if (existing != null) {
+                    Log.d(TAG, "Рецепт $recipeId найден в БД, возвращаем из кэша")
+                    return@withContext existing.toDto()
+                }
+
+                val categories = apiService.getCategories()
+                Log.d(TAG, "Загружено ${categories.size} категорий для поиска рецепта $recipeId")
+
+                for (category in categories) {
+                    try {
+                        Log.d(
+                            TAG,
+                            "Поиск рецепта $recipeId в категории ${category.id}: ${category.title}"
+                        )
+                        val recipes = apiService.getRecipesByCategory(category.id)
+
+                        recipes.find { it.id == recipeId }?.let { foundRecipe ->
+                            recipeDao.insertRecipe(foundRecipe.toEntity(category.id))
+                            Log.d(
+                                TAG,
+                                "✅ Рецепт $recipeId загружен из категории ${category.id} и сохранен в БД"
+                            )
+                            return@withContext foundRecipe
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Ошибка при загрузке категории ${category.id}: ${e.message}")
+                    }
+                }
+
+                Log.w(TAG, "Рецепт $recipeId не найден ни в одной категории")
+                null
+            } catch (e: Exception) {
+                Log.e(
+                    TAG,
+                    "Критическая ошибка при принудительной загрузке рецепта $recipeId: ${e.message}",
+                    e
+                )
+                null
+            }
+        }
+    }
 
     override fun getCategories(): Flow<List<CategoryDto>> {
 
@@ -90,21 +136,38 @@ class RecipesRepositoryImpl(
             }
     }
 
-    override suspend fun getRecipe(recipeId: Int): RecipeDto? {
-        return try {
-            withContext(Dispatchers.IO) {
+    override fun getRecipe(recipeId: Int): Flow<RecipeDto?> {
+        refreshScope.launch {
+            try {
+                val existingEntity = recipeDao.getRecipeByIdSync(recipeId)
 
-                val recipeEntity = recipeDao.getRecipeById(recipeId)
-                    .firstOrNull()
+                if (existingEntity == null) {
+                    Log.d(TAG, "Рецепт $recipeId не найден в кеше, запуск поиска по API")
+                    findAndCacheRecipeFromAllCategories(recipeId)
+                } else {
+                    Log.d(
+                        TAG,
+                        "Рецепт $recipeId найден в кеше (категория ${existingEntity.categoryId})"
+                    )
+                }
 
-                recipeEntity?.toDto() ?: loadRecipeFromApi(recipeId)
+            } catch (e: Exception) {
+                Log.e(TAG, "Ошибка при инициализации загрузки рецепта $recipeId: ${e.message}", e)
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Ошибка при загрузке рецепта $recipeId: ${e.message}", e)
-            null
         }
+
+        return recipeDao.getRecipeById(recipeId)
+            .map { entity ->
+                entity?.toDto()
+            }
     }
 
+    override suspend fun getRecipeSync(recipeId: Int): RecipeDto? {
+        return withContext(Dispatchers.IO) {
+            val entity = recipeDao.getRecipeByIdSync(recipeId)
+            entity?.toDto()
+        }
+    }
 
     override suspend fun refreshCategories() {
         try {
@@ -214,23 +277,67 @@ class RecipesRepositoryImpl(
         }
     }
 
-    private suspend fun loadRecipeFromApi(recipeId: Int): RecipeDto? {
-        return try {
+    private suspend fun findAndCacheRecipeFromAllCategories(recipeId: Int) {
+        try {
+            Log.d(TAG, "Поиск рецепта $recipeId по всем категориям API")
 
             val categories = apiService.getCategories()
+            Log.d(TAG, "Загружено ${categories.size} категорий для поиска")
+
+            categoryDao.insertCategories(categories.map { it.toEntity() })
 
             for (category in categories) {
-                val recipes = apiService.getRecipesByCategory(category.id)
-                recipes.find { it.id == recipeId }?.let { foundRecipe ->
+                try {
+                    Log.d(TAG, "Поиск в категории ${category.id}: ${category.title}")
+                    val recipes = apiService.getRecipesByCategory(category.id)
 
-                    recipeDao.insertRecipe(foundRecipe.toEntity(category.id))
-                    return foundRecipe
+                    recipes.find { it.id == recipeId }?.let { foundRecipe ->
+
+                        recipeDao.insertRecipe(foundRecipe.toEntity(category.id))
+                        recipeDao.insertRecipes(recipes.map { it.toEntity(category.id) })
+
+                        Log.d(
+                            TAG,
+                            "Рецепт $recipeId найден в категории ${category.id} и сохранен в БД"
+                        )
+                        Log.d(
+                            TAG,
+                            "Сохранено ${recipes.size} рецептов категории ${category.id} в кеш"
+                        )
+                        return
+                    }
+                } catch (e: Exception) {
+                    Log.e(
+                        TAG,
+                        "Ошибка при загрузке рецептов категории ${category.id}: ${e.message}",
+                        e
+                    )
                 }
             }
-            null
+
+            Log.w(TAG, "Рецепт $recipeId не найден ни в одной категории")
+
         } catch (e: Exception) {
-            Log.e(TAG, "Ошибка при загрузке рецепта $recipeId из API: ${e.message}", e)
-            null
+            Log.e(TAG, "Критическая ошибка при поиске рецепта $recipeId: ${e.message}", e)
+        }
+    }
+
+    private suspend fun updateRecipeFromApiIfNeeded(recipeId: Int, categoryId: Int) {
+        try {
+            Log.d(TAG, "Проверка обновлений для рецепта $recipeId (категория $categoryId)")
+
+            val recipes = apiService.getRecipesByCategory(categoryId)
+
+            recipes.find { it.id == recipeId }?.let { foundRecipe ->
+                recipeDao.insertRecipe(foundRecipe.toEntity(categoryId))
+                Log.d(TAG, "✅ Рецепт $recipeId обновлен из API")
+            }
+
+            recipeDao.insertRecipes(recipes.map { it.toEntity(categoryId) })
+            Log.d(TAG, "✅ Обновлено ${recipes.size} рецептов категории $categoryId")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Ошибка при обновлении рецепта $recipeId: ${e.message}", e)
         }
     }
 }

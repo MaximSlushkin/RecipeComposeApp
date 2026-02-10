@@ -14,7 +14,11 @@ import com.yourcompany.recipecomposeapp.utils.Constants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -33,7 +37,7 @@ class RecipeDetailsViewModel(
 
     init {
         if (recipeId != -1) {
-            loadRecipe()
+            subscribeToRecipeFlow()
             setupReactiveSubscriptions()
         } else {
             _uiState.update { currentState ->
@@ -51,48 +55,64 @@ class RecipeDetailsViewModel(
             ?: -1
     }
 
-    fun loadRecipe() {
-        if (_uiState.value.recipe != null && _uiState.value.recipe?.id == recipeId) {
-            return
-        }
-
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-
+    private fun subscribeToRecipeFlow() {
         viewModelScope.launch {
-            try {
-                val recipeDto = repository.getRecipe(recipeId)
-
-                if (recipeDto != null) {
-                    val recipe = recipeDto.toUiModel()
-
-                    val savedPortions = savedStateHandle.get<Int>("currentPortions")
-                    val initialPortions = savedPortions ?: recipe.servings
-
-                    _uiState.update { currentState ->
-                        currentState.copy(
-                            recipe = recipe,
-                            currentPortions = initialPortions,
-                            isLoading = false
-                        )
-                    }
-                } else {
+            loadRecipeWithFallback(recipeId)
+                .onStart {
+                    _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+                }
+                .catch { exception ->
                     _uiState.update { currentState ->
                         currentState.copy(
                             isLoading = false,
-                            errorMessage = "Рецепт не найден"
+                            errorMessage = "Ошибка загрузки рецепта: ${exception.localizedMessage}"
                         )
                     }
                 }
-            } catch (e: Exception) {
-                _uiState.update { currentState ->
-                    currentState.copy(
-                        isLoading = false,
-                        errorMessage = "Ошибка загрузки: ${e.localizedMessage}"
-                    )
+                .collect { recipe ->
+                    if (recipe != null) {
+                        val savedPortions = savedStateHandle.get<Int>("currentPortions")
+                        val initialPortions = savedPortions ?: recipe.servings
+
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                recipe = recipe,
+                                currentPortions = initialPortions,
+                                isLoading = false,
+                                errorMessage = null
+                            )
+                        }
+                    } else {
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                isLoading = false,
+                                errorMessage = "Рецепт не найден"
+                            )
+                        }
+                    }
                 }
-            }
         }
     }
+
+    private suspend fun loadRecipeWithFallback(recipeId: Int) =
+        kotlinx.coroutines.flow.flow<com.yourcompany.recipecomposeapp.recipes.presentation.model.RecipeUiModel?> {
+            val recipeFromFlow = repository.getRecipe(recipeId)
+                .map { it?.toUiModel() }
+                .firstOrNull { it != null }
+
+            if (recipeFromFlow != null) {
+                emit(recipeFromFlow)
+                return@flow
+            }
+
+            val forcedRecipe = repository.forceLoadRecipe(recipeId)?.toUiModel()
+            if (forcedRecipe != null) {
+                emit(forcedRecipe)
+                return@flow
+            }
+
+            emit(null)
+        }
 
     private fun setupReactiveSubscriptions() {
         viewModelScope.launch {
@@ -100,7 +120,10 @@ class RecipeDetailsViewModel(
                 favoriteManager.isFavoriteFlow(recipeId),
                 _uiState
             ) { isFavorite, currentState ->
-                currentState.copy(isFavorite = isFavorite)
+                currentState.copy(
+                    isFavorite = isFavorite,
+                    isFavoriteOperationInProgress = false
+                )
             }.collect { newState ->
                 _uiState.update { newState }
             }
