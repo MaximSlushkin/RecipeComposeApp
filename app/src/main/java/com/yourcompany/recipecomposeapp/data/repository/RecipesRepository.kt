@@ -1,0 +1,26 @@
+package com.yourcompany.recipecomposeapp.data.repository
+
+import com.yourcompany.recipecomposeapp.data.model.CategoryDto
+import com.yourcompany.recipecomposeapp.data.model.RecipeDto
+import kotlinx.coroutines.flow.Flow
+
+interface RecipesRepository {
+
+    fun getCategories(): Flow<List<CategoryDto>>
+
+    fun getRecipesByCategory(categoryId: Int): Flow<List<RecipeDto>>
+
+    fun getRecipe(recipeId: Int): Flow<RecipeDto?>
+
+    suspend fun getRecipeSync(recipeId: Int): RecipeDto?
+
+    suspend fun refreshCategories()
+
+    suspend fun refreshRecipes(categoryId: Int)
+
+    suspend fun clearCache()
+
+    suspend fun invalidateCache(categoryId: Int)
+
+    suspend fun forceLoadRecipe(recipeId: Int): RecipeDto?
+}
