@@ -1,0 +1,31 @@
+package com.yourcompany.recipecomposeapp.features.recipes.presentation.model
+
+import android.os.Parcelable
+import androidx.compose.runtime.Immutable
+import com.yourcompany.recipecomposeapp.core.utils.Constants
+import com.yourcompany.recipecomposeapp.core.ui.components.ingredients.presentation.model.IngredientUiModel
+import com.yourcompany.recipecomposeapp.data.model.RecipeDto
+import com.yourcompany.recipecomposeapp.core.ui.components.ingredients.presentation.model.toUiModel
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
+@Immutable
+data class RecipeUiModel(
+    val id: Int,
+    val title: String,
+    val imageUrl: String,
+    val ingredients: List<IngredientUiModel>,
+    val method: List<String>,
+    val servings: Int = 1,
+    val isFavorite: Boolean = false,
+) : Parcelable
+
+fun RecipeDto.toUiModel() = RecipeUiModel(
+    id = id,
+    title = title,
+    imageUrl = Constants.getFullImageUrl(imageUrl),
+    ingredients = ingredients.map { it.toUiModel() },
+    method = method,
+    servings = servings,
+    isFavorite = false,
+)
