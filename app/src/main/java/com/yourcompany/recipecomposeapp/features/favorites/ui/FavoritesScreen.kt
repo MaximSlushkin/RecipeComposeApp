@@ -1,6 +1,5 @@
 package com.yourcompany.recipecomposeapp.features.favorites.ui
 
-import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,41 +16,26 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
-import com.yourcompany.recipecomposeapp.data.repository.RecipesRepository
 import com.yourcompany.recipecomposeapp.features.favorites.presentation.FavoritesViewModel
-import com.yourcompany.recipecomposeapp.features.favorites.presentation.model.FavoritesUiState
-import com.yourcompany.recipecomposeapp.features.recipes.ui.RecipeItem
 import com.yourcompany.recipecomposeapp.features.recipes.presentation.model.RecipeUiModel
+import com.yourcompany.recipecomposeapp.features.recipes.ui.RecipeItem
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 
 @Composable
 fun FavoritesScreen(
+    viewModel: FavoritesViewModel,
     modifier: Modifier = Modifier,
-    repository: RecipesRepository,
     onRecipeClick: (Int) -> Unit = { }
 ) {
-    val context = LocalContext.current
-    val application = context.applicationContext as Application
-
-    val viewModel: FavoritesViewModel = remember {
-        FavoritesViewModel(
-            application = application,
-            repository = repository
-        )
-    }
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Column(
@@ -206,21 +190,6 @@ private fun EmptyState() {
 @Composable
 fun FavoritesScreenPreview() {
     RecipesAppTheme {
-        val viewModel: FavoritesViewModel = viewModel()
-        val uiState = FavoritesUiState(
-            favoriteRecipes = listOf(
-                RecipeUiModel(
-                    id = 1,
-                    title = "Классический бургер",
-                    imageUrl = "",
-                    ingredients = emptyList(),
-                    method = emptyList()
-                )
-            ),
-            isLoading = false,
-            isEmpty = false
-        )
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -233,8 +202,19 @@ fun FavoritesScreenPreview() {
                 modifier = Modifier
             )
 
+            val mockRecipes = listOf(
+                RecipeUiModel(
+                    id = 1,
+                    title = "Классический бургер",
+                    imageUrl = "",
+                    ingredients = emptyList(),
+                    method = emptyList(),
+                    servings = 4
+                )
+            )
+
             RecipesList(
-                recipes = uiState.favoriteRecipes,
+                recipes = mockRecipes,
                 onRecipeClick = { }
             )
         }

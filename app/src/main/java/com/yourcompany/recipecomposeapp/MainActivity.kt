@@ -20,8 +20,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        NetworkConfig.initialize(BuildConfig.DEBUG)
-
         handleDeepLinkIntent(intent)
         setContent {
             RecipesApp(deepLinkIntent = deepLinkIntent)
