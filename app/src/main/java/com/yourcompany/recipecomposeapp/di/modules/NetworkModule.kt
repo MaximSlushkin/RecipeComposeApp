@@ -1,30 +1,36 @@
-package com.yourcompany.recipecomposeapp.di
+package com.yourcompany.recipecomposeapp.di.modules
 
-import android.content.Context
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.yourcompany.recipecomposeapp.BuildConfig
-import com.yourcompany.recipecomposeapp.core.network.NetworkConfig
 import com.yourcompany.recipecomposeapp.core.network.api.RecipesApiService
-import com.yourcompany.recipecomposeapp.data.database.RecipesDatabase
-import com.yourcompany.recipecomposeapp.data.repository.RecipesRepository
-import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryImpl
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
+import javax.inject.Singleton
 
-class AppContainer(context: Context) {
+@Module
+@InstallIn(SingletonComponent::class)
+object NetworkModule {
 
-    private val jsonConfig = Json {
+    @Provides
+    @Singleton
+    fun provideJson(): Json = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
         isLenient = true
         explicitNulls = false
     }
 
-    private val okHttpClient: OkHttpClient by lazy {
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BODY
@@ -33,7 +39,7 @@ class AppContainer(context: Context) {
             }
         }
 
-        OkHttpClient.Builder()
+        return OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -50,30 +56,22 @@ class AppContainer(context: Context) {
             .build()
     }
 
-    private val retrofit: Retrofit by lazy {
-        Retrofit.Builder()
+    @Provides
+    @Singleton
+    fun provideRetrofit(
+        okHttpClient: OkHttpClient,
+        json: Json
+    ): Retrofit {
+        return Retrofit.Builder()
             .baseUrl("https://recipes.androidsprint.ru/api/")
             .client(okHttpClient)
-            .addConverterFactory(jsonConfig.asConverterFactory("application/json".toMediaType()))
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
     }
 
-    private val recipesApiService: RecipesApiService by lazy {
-        retrofit.create(RecipesApiService::class.java)
-    }
-
-    private val recipesDatabase: RecipesDatabase by lazy {
-        RecipesDatabase.buildDatabase(context)
-    }
-
-    val recipesRepository: RecipesRepository by lazy {
-        RecipesRepositoryImpl(
-            apiService = recipesApiService,
-            database = recipesDatabase
-        )
-    }
-
-    init {
-        NetworkConfig.initialize(BuildConfig.DEBUG)
+    @Provides
+    @Singleton
+    fun provideRecipesApiService(retrofit: Retrofit): RecipesApiService {
+        return retrofit.create(RecipesApiService::class.java)
     }
 }
