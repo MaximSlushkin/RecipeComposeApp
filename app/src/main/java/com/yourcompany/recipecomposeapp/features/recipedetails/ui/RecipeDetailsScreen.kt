@@ -1,6 +1,5 @@
 package com.yourcompany.recipecomposeapp.features.recipedetails.ui
 
-import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,59 +22,23 @@ import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yourcompany.recipecomposeapp.R
-import com.yourcompany.recipecomposeapp.data.repository.RecipesRepository
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
 import com.yourcompany.recipecomposeapp.core.ui.components.ingredients.IngredientItem
 import com.yourcompany.recipecomposeapp.core.ui.components.ingredients.InstructionItem
 import com.yourcompany.recipecomposeapp.core.ui.components.ingredients.PortionsSlider
 import com.yourcompany.recipecomposeapp.core.ui.components.ingredients.presentation.model.IngredientUiModel
+import com.yourcompany.recipecomposeapp.core.utils.ShareUtils
 import com.yourcompany.recipecomposeapp.features.recipes.presentation.model.RecipeUiModel
 import com.yourcompany.recipecomposeapp.features.recipedetails.presentation.RecipeDetailsViewModel
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
-import com.yourcompany.recipecomposeapp.core.utils.Constants
-import com.yourcompany.recipecomposeapp.core.utils.ShareUtils
 
 @Composable
 fun RecipeDetailsScreen(
-    recipeId: Int,
-    repository: RecipesRepository,
+    viewModel: RecipeDetailsViewModel,
     modifier: Modifier = Modifier
 ) {
-    val application = LocalContext.current.applicationContext as? Application
-    if (application == null) {
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(dimensionResource(R.dimen.mainPadding)),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Ошибка инициализации приложения",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center
-            )
-        }
-        return
-    }
-
-    val viewModel: RecipeDetailsViewModel = remember(recipeId) {
-
-        val savedStateHandle = SavedStateHandle().apply {
-            set(Constants.PARAM_RECIPE_ID, recipeId)
-        }
-        RecipeDetailsViewModel(
-            application = application,
-            savedStateHandle = savedStateHandle,
-            repository = repository
-        )
-    }
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 

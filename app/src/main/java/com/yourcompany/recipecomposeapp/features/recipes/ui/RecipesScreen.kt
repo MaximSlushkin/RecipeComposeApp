@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,11 +24,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
+import com.yourcompany.recipecomposeapp.core.ui.components.ingredients.presentation.model.IngredientUiModel
 import com.yourcompany.recipecomposeapp.features.recipes.presentation.RecipesViewModel
 import com.yourcompany.recipecomposeapp.features.recipes.presentation.model.RecipeUiModel
+import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 
 @Composable
 fun RecipesScreen(
@@ -177,7 +179,44 @@ private fun EmptyState() {
 @Preview(showBackground = true)
 @Composable
 fun RecipesScreenPreview() {
+    // Для превью создаем заглушку ViewModel
+    // В реальном приложении ViewModel будет передана из RecipesApp
+    RecipesAppTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            // Создаем моковые данные для превью
+            val mockRecipes = listOf(
+                RecipeUiModel(
+                    id = 1,
+                    title = "Классический бургер",
+                    imageUrl = "",
+                    ingredients = listOf(
+                        IngredientUiModel("Говяжий фарш", "500 г"),
+                        IngredientUiModel("Булочка", "2 шт")
+                    ),
+                    method = listOf("1. Приготовить", "2. Подавать"),
+                    servings = 4
+                )
+            )
 
-    val viewModel: RecipesViewModel = viewModel()
-    RecipesScreen(viewModel = viewModel)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+            ) {
+                ScreenHeader(
+                    header = "Бургеры",
+                    imageUrl = "",
+                    imageRes = R.drawable.bcg_categories
+                )
+
+                RecipesList(
+                    recipes = mockRecipes,
+                    onRecipeClick = { }
+                )
+            }
+        }
+    }
 }

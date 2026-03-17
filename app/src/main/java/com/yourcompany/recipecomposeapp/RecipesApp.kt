@@ -9,22 +9,23 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navDeepLink
-import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryImpl
+import com.yourcompany.recipecomposeapp.core.navigation.Destination
+import com.yourcompany.recipecomposeapp.core.ui.BottomNavigation
+import com.yourcompany.recipecomposeapp.core.utils.Constants
+import com.yourcompany.recipecomposeapp.di.RecipeApplication
+import com.yourcompany.recipecomposeapp.di.factories.FavoritesViewModelFactory
+import com.yourcompany.recipecomposeapp.di.factories.RecipeDetailsViewModelFactory
+import com.yourcompany.recipecomposeapp.di.factories.RecipesViewModelFactory
 import com.yourcompany.recipecomposeapp.features.categories.ui.CategoriesScreen
 import com.yourcompany.recipecomposeapp.features.favorites.ui.FavoritesScreen
-import com.yourcompany.recipecomposeapp.core.ui.BottomNavigation
-import com.yourcompany.recipecomposeapp.core.navigation.Destination
 import com.yourcompany.recipecomposeapp.features.recipes.ui.RecipesScreen
 import com.yourcompany.recipecomposeapp.features.recipedetails.ui.RecipeDetailsScreen
-import com.yourcompany.recipecomposeapp.core.network.NetworkConfig
-import com.yourcompany.recipecomposeapp.data.database.RecipesDatabase
-import com.yourcompany.recipecomposeapp.features.recipes.presentation.RecipesViewModel
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
-import com.yourcompany.recipecomposeapp.core.utils.Constants
 import kotlinx.coroutines.delay
 
 @Composable
@@ -33,30 +34,13 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
         val navController = rememberNavController()
         val context = LocalContext.current
 
-        val database = remember {
-            RecipesDatabase.buildDatabase(context)
-        }
-
-        LaunchedEffect(Unit) {
-            if (!NetworkConfig.isInitialized) {
-                Log.e("RecipesApp", "NetworkConfig not initialized! Check MainActivity.onCreate()")
-            }
-        }
-
-        val repository = remember {
-            RecipesRepositoryImpl(
-                apiService = NetworkConfig.recipesApiService,
-                database = database
-            )
-        }
+        val appContainer = (context.applicationContext as RecipeApplication).appContainer
 
         LaunchedEffect(deepLinkIntent) {
             deepLinkIntent?.data?.let { uri ->
                 val recipeId = parseRecipeIdFromUri(uri.toString())
-
                 if (recipeId != null) {
                     delay(100)
-
                     navController.navigate(
                         Destination.RecipeDetail.createRoute(recipeId)
                     ) {
@@ -69,29 +53,30 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
             }
         }
 
-        Scaffold(bottomBar = {
-            BottomNavigation(
-                navController = navController,
-                onCategoriesClick = {
-                    navController.navigate(Destination.Categories.route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
+        Scaffold(
+            bottomBar = {
+                BottomNavigation(
+                    navController = navController,
+                    onCategoriesClick = {
+                        navController.navigate(Destination.Categories.route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                onFavoritesClick = {
-                    navController.navigate(Destination.Favorites.route) {
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
+                    },
+                    onFavoritesClick = {
+                        navController.navigate(Destination.Favorites.route) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
-                },
-            )
-        }
+                )
+            }
         ) { innerPadding ->
             NavHost(
                 navController = navController,
@@ -102,12 +87,14 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                     CategoriesScreen(
                         modifier = Modifier,
                         onCategoryClick = { categoryId, categoryTitle, imageUrl ->
-                            val safeCategoryId =
-                                categoryId.takeIf { it >= 0 } ?: Constants.DEFAULT_CATEGORY_ID
-                            val safeCategoryTitle =
-                                categoryTitle.ifEmpty { Constants.DEFAULT_CATEGORY_TITLE }
-                            val safeImageUrl =
-                                imageUrl.ifEmpty { Constants.DEFAULT_CATEGORY_IMAGE_URL }
+                            val safeCategoryId = categoryId.takeIf { it >= 0 }
+                                ?: Constants.DEFAULT_CATEGORY_ID
+                            val safeCategoryTitle = categoryTitle.ifEmpty {
+                                Constants.DEFAULT_CATEGORY_TITLE
+                            }
+                            val safeImageUrl = imageUrl.ifEmpty {
+                                Constants.DEFAULT_CATEGORY_IMAGE_URL
+                            }
 
                             val route = Destination.Recipes.createRoute(
                                 categoryId = safeCategoryId,
@@ -115,15 +102,23 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                                 categoryImageUrl = safeImageUrl
                             )
                             navController.navigate(route)
-                        },
-                        repository = repository  // передаем репозиторий
+                        }
                     )
                 }
 
                 composable(Destination.Favorites.route) {
+                    val application = context.applicationContext as android.app.Application
+
+                    val viewModel = remember {
+                        FavoritesViewModelFactory(
+                            application = application,
+                            repository = appContainer.recipesRepository
+                        ).create()
+                    }
+
                     FavoritesScreen(
+                        viewModel = viewModel,
                         modifier = Modifier,
-                        repository = repository,
                         onRecipeClick = { recipeId ->
                             navController.navigate(Destination.RecipeDetail.createRoute(recipeId))
                         }
@@ -134,18 +129,18 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                     route = Destination.Recipes.route,
                     arguments = Destination.Recipes.arguments
                 ) { backStackEntry ->
-
-                    val categoryId = backStackEntry.arguments?.getInt(Constants.KEY_CATEGORY_ID)
-                        ?: Constants.DEFAULT_CATEGORY_ID
-                    val categoryTitle =
-                        backStackEntry.arguments?.getString(Constants.KEY_CATEGORY_TITLE)
-                            ?: Constants.DEFAULT_CATEGORY_TITLE
-                    val categoryImageUrl =
-                        backStackEntry.arguments?.getString(Constants.KEY_CATEGORY_IMAGE_URL)
-                            ?: Constants.DEFAULT_CATEGORY_IMAGE_URL
-
                     val savedStateHandle = remember(backStackEntry) {
-                        backStackEntry.savedStateHandle.apply {
+                        SavedStateHandle().apply {
+                            val categoryId =
+                                backStackEntry.arguments?.getInt(Constants.KEY_CATEGORY_ID)
+                                    ?: Constants.DEFAULT_CATEGORY_ID
+                            val categoryTitle =
+                                backStackEntry.arguments?.getString(Constants.KEY_CATEGORY_TITLE)
+                                    ?: Constants.DEFAULT_CATEGORY_TITLE
+                            val categoryImageUrl =
+                                backStackEntry.arguments?.getString(Constants.KEY_CATEGORY_IMAGE_URL)
+                                    ?: Constants.DEFAULT_CATEGORY_IMAGE_URL
+
                             set(Constants.KEY_CATEGORY_ID, categoryId)
                             set(Constants.KEY_CATEGORY_TITLE, categoryTitle)
                             set(Constants.KEY_CATEGORY_IMAGE_URL, categoryImageUrl)
@@ -153,10 +148,10 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                     }
 
                     val viewModel = remember(backStackEntry) {
-                        RecipesViewModel(
+                        RecipesViewModelFactory(
                             savedStateHandle = savedStateHandle,
-                            repository = repository
-                        )
+                            repository = appContainer.recipesRepository
+                        ).create()
                     }
 
                     RecipesScreen(
@@ -182,11 +177,27 @@ fun RecipesApp(deepLinkIntent: Intent? = null) {
                         }
                     )
                 ) { backStackEntry ->
-                    val recipeId = backStackEntry.arguments?.getInt(Constants.PARAM_RECIPE_ID) ?: -1
+                    val recipeId = backStackEntry.arguments?.getInt(Constants.PARAM_RECIPE_ID)
+                        ?: -1
+
+                    val savedStateHandle = remember(backStackEntry) {
+                        SavedStateHandle().apply {
+                            set(Constants.PARAM_RECIPE_ID, recipeId)
+                        }
+                    }
+
+                    val application = context.applicationContext as android.app.Application
+
+                    val viewModel = remember(backStackEntry) {
+                        RecipeDetailsViewModelFactory(
+                            application = application,
+                            savedStateHandle = savedStateHandle,
+                            repository = appContainer.recipesRepository
+                        ).create()
+                    }
 
                     RecipeDetailsScreen(
-                        recipeId = recipeId,
-                        repository = repository,
+                        viewModel = viewModel,
                         modifier = Modifier
                     )
                 }
