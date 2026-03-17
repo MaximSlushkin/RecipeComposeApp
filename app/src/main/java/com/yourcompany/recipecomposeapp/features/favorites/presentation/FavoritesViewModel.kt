@@ -8,6 +8,7 @@ import com.yourcompany.recipecomposeapp.features.favorites.presentation.model.Fa
 import com.yourcompany.recipecomposeapp.features.recipes.presentation.model.RecipeUiModel
 import com.yourcompany.recipecomposeapp.features.recipes.presentation.model.toUiModel
 import com.yourcompany.recipecomposeapp.core.utils.FavoriteDataStoreManager
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,8 +20,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class FavoritesViewModel(
+@HiltViewModel
+class FavoritesViewModel @Inject constructor(
     application: Application,
     private val repository: RecipesRepository
 ) : AndroidViewModel(application) {

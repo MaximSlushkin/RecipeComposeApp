@@ -3,8 +3,6 @@ package com.yourcompany.recipecomposeapp.features.recipedetails.presentation
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepository
 import com.yourcompany.recipecomposeapp.features.recipes.presentation.model.RecipeUiModel
@@ -12,6 +10,7 @@ import com.yourcompany.recipecomposeapp.features.recipedetails.presentation.mode
 import com.yourcompany.recipecomposeapp.features.recipes.presentation.model.toUiModel
 import com.yourcompany.recipecomposeapp.core.utils.FavoriteDataStoreManager
 import com.yourcompany.recipecomposeapp.core.utils.Constants
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,8 +22,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class RecipeDetailsViewModel(
+@HiltViewModel
+class RecipeDetailsViewModel @Inject constructor(
     application: Application,
     private val savedStateHandle: SavedStateHandle,
     private val repository: RecipesRepository
@@ -161,28 +162,5 @@ class RecipeDetailsViewModel(
 
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
-    }
-
-    companion object {
-        fun provideFactory(
-            application: Application,
-            recipeId: Int,
-            repository: RecipesRepository
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(RecipeDetailsViewModel::class.java)) {
-                    val savedStateHandle = SavedStateHandle().apply {
-                        set(Constants.PARAM_RECIPE_ID, recipeId)
-                    }
-                    return RecipeDetailsViewModel(
-                        savedStateHandle = savedStateHandle,
-                        application = application,
-                        repository = repository
-                    ) as T
-                }
-                throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
-            }
-        }
     }
 }
