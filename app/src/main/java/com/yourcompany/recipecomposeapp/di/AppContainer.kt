@@ -2,6 +2,7 @@ package com.yourcompany.recipecomposeapp.di
 
 import android.content.Context
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import com.yourcompany.recipecomposeapp.BuildConfig
 import com.yourcompany.recipecomposeapp.core.network.NetworkConfig
 import com.yourcompany.recipecomposeapp.core.network.api.RecipesApiService
 import com.yourcompany.recipecomposeapp.data.database.RecipesDatabase
@@ -25,7 +26,11 @@ class AppContainer(context: Context) {
 
     private val okHttpClient: OkHttpClient by lazy {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
         }
 
         OkHttpClient.Builder()
@@ -69,6 +74,6 @@ class AppContainer(context: Context) {
     }
 
     init {
-        NetworkConfig.initialize(true)
+        NetworkConfig.initialize(BuildConfig.DEBUG)
     }
 }
