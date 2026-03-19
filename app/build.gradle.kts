@@ -6,6 +6,7 @@ plugins {
     id("kotlinx-serialization")
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+    id("jacoco")
 }
 
 android {
@@ -35,6 +36,7 @@ android {
     buildTypes {
         debug {
             isDebuggable = true
+            enableUnitTestCoverage = true
         }
         release {
             isMinifyEnabled = false
@@ -106,4 +108,53 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
+    // Unit тесты (JVM)
+    testImplementation(libs.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.coroutines.test)
+    testImplementation(libs.turbine)
+
+    // Android UI тесты
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+tasks.register("jacocoTestReport", JacocoReport::class) {
+    dependsOn("testDebugUnitTest")
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*",
+        "**/databinding/*.*",
+        "**/di/**",
+        "**/data/database/**",
+        "**/data/model/**",
+        "**/core/network/**"
+    )
+
+    val debugTree = fileTree(layout.buildDirectory.dir("intermediates/javac/debug").get().asFile) {
+        exclude(fileFilter)
+    }
+
+    val kotlinDebugTree = fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug").get().asFile) {
+        exclude(fileFilter)
+    }
+
+    sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
+    classDirectories.setFrom(files(debugTree, kotlinDebugTree))
+
+    executionData.setFrom(fileTree(layout.buildDirectory.get().asFile) {
+        include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
+    })
 }
