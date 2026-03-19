@@ -1,8 +1,8 @@
-package com.yourcompany.recipecomposeapp.app.src.test.java.com.yourcompany.recipecomposeapp.core.ui.components.ingredients.presentation.model
+package com.yourcompany.recipecomposeapp.ingredients.presentation.model
 
 import com.yourcompany.recipecomposeapp.core.ui.components.ingredients.presentation.model.toUiModel
 import com.yourcompany.recipecomposeapp.data.model.IngredientDto
-import org.junit.Assert.assertEquals
+import org.junit.Assert
 import org.junit.Test
 
 class IngredientMapperTest {
@@ -17,8 +17,8 @@ class IngredientMapperTest {
 
         val result = dto.toUiModel()
 
-        assertEquals("Говяжий фарш", result.name)
-        assertEquals("500 г", result.amount)
+        Assert.assertEquals("Говяжий фарш", result.name)
+        Assert.assertEquals("500 г", result.amount)
     }
 
     @Test
@@ -31,8 +31,8 @@ class IngredientMapperTest {
 
         val result = dto.toUiModel()
 
-        assertEquals("Яйца", result.name)
-        assertEquals("2", result.amount)
+        Assert.assertEquals("Яйца", result.name)
+        Assert.assertEquals("2", result.amount)
     }
 
     @Test
@@ -45,8 +45,8 @@ class IngredientMapperTest {
 
         val result = dto.toUiModel()
 
-        assertEquals("Помидоры", result.name)
-        assertEquals("шт", result.amount)
+        Assert.assertEquals("Помидоры", result.name)
+        Assert.assertEquals("шт", result.amount)
     }
 
     @Test
@@ -59,8 +59,8 @@ class IngredientMapperTest {
 
         val result = dto.toUiModel()
 
-        assertEquals("Соль по вкусу", result.name)
-        assertEquals("", result.amount)
+        Assert.assertEquals("Соль по вкусу", result.name)
+        Assert.assertEquals("", result.amount)
     }
 
     @Test
@@ -73,7 +73,7 @@ class IngredientMapperTest {
 
         val result = dto.toUiModel()
 
-        assertEquals("Соль", result.name)
-        assertEquals("0.5 ч.л.", result.amount)
+        Assert.assertEquals("Соль", result.name)
+        Assert.assertEquals("0.5 ч.л.", result.amount)
     }
 }
