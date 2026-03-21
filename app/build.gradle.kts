@@ -66,7 +66,13 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.15"
     }
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+        }
+    }
 }
+
 
 dependencies {
 
@@ -147,9 +153,10 @@ tasks.register("jacocoTestReport", JacocoReport::class) {
         exclude(fileFilter)
     }
 
-    val kotlinDebugTree = fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug").get().asFile) {
-        exclude(fileFilter)
-    }
+    val kotlinDebugTree =
+        fileTree(layout.buildDirectory.dir("tmp/kotlin-classes/debug").get().asFile) {
+            exclude(fileFilter)
+        }
 
     sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
     classDirectories.setFrom(files(debugTree, kotlinDebugTree))
