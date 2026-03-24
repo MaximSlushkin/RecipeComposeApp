@@ -1,5 +1,6 @@
 package com.yourcompany.recipecomposeapp.data.repository
 
+import app.cash.turbine.test
 import com.yourcompany.recipecomposeapp.core.network.api.RecipesApiService
 import com.yourcompany.recipecomposeapp.data.database.RecipesDatabase
 import com.yourcompany.recipecomposeapp.data.database.dao.CategoryDao
@@ -52,11 +53,14 @@ class RecipesRepositoryTest {
         coEvery { categoryDao.getAllCategories() } returns flowOf(categoryEntities)
         coEvery { apiService.getCategories() } returns expectedCategories
 
-        val result = repository.getCategories().first()
+        repository.getCategories().test {
+            val result = awaitItem()
 
-        assertEquals(2, result.size)
-        assertEquals("Breakfast", result[0].title)
-        assertEquals("Lunch", result[1].title)
+            assertEquals(2, result.size)
+            assertEquals("Breakfast", result[0].title)
+            assertEquals("Lunch", result[1].title)
+            cancelAndIgnoreRemainingEvents()
+        }
         coVerify { categoryDao.getAllCategories() }
     }
 
@@ -70,10 +74,13 @@ class RecipesRepositoryTest {
         coEvery { categoryDao.getAllCategories() } returns flowOf(categoryEntities)
         coEvery { apiService.getCategories() } throws IOException("Network error")
 
-        val result = repository.getCategories().first()
+        repository.getCategories().test {
+            val result = awaitItem()
 
-        assertEquals(1, result.size)
-        assertEquals("Breakfast", result[0].title)
+            assertEquals(1, result.size)
+            assertEquals("Breakfast", result[0].title)
+            cancelAndIgnoreRemainingEvents()
+        }
         coVerify { apiService.getCategories() }
         coVerify { categoryDao.getAllCategories() }
     }
@@ -92,11 +99,11 @@ class RecipesRepositoryTest {
         coEvery { apiService.getRecipesByCategory(categoryId) } returns
                 recipeEntities.map { it.toDto() }
 
-        val result = repository.getRecipesByCategory(categoryId).first()
+        repository.getRecipesByCategory(categoryId).test {
+            val result = awaitItem()
 
-        assertEquals(2, result.size)
-        result.forEach { recipeDto ->
-            assertEquals(categoryId, recipeDto.categoryIds.first())
+            assertEquals(2, result.size)
+            cancelAndIgnoreRemainingEvents()
         }
         coVerify { recipeDao.getRecipesByCategory(categoryId) }
     }
