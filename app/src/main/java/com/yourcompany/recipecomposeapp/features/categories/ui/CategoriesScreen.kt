@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.yourcompany.recipecomposeapp.R
 import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
 import com.yourcompany.recipecomposeapp.features.categories.presentation.CategoriesViewModel
+import com.yourcompany.recipecomposeapp.features.categories.presentation.model.CategoriesUiState
 import com.yourcompany.recipecomposeapp.features.categories.presentation.model.CategoryUiModel
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 
@@ -36,9 +38,30 @@ fun CategoriesScreen(
     modifier: Modifier = Modifier,
     onCategoryClick: (Int, String, String) -> Unit = { _, _, _ -> }
 ) {
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    CategoriesContent(
+        uiState = uiState,
+        onCategoryClick = onCategoryClick,
+        onRetry = { viewModel.retry() },
+        modifier = modifier
+    )
+}
+
+/**
+ * Stateless composable для тестирования UI экрана категорий
+ * @param uiState Состояние UI для отображения
+ * @param onCategoryClick Callback при клике на категорию
+ * @param onRetry Callback при повторной попытке загрузки
+ * @param modifier Модификатор
+ */
+@Composable
+fun CategoriesContent(
+    uiState: CategoriesUiState,
+    onCategoryClick: (Int, String, String) -> Unit,
+    onRetry: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -57,8 +80,8 @@ fun CategoriesScreen(
 
             uiState.error != null -> {
                 ErrorState(
-                    errorMessage = uiState.error ?: "Ошибка",
-                    onRetry = { viewModel.retry() }
+                    errorMessage = uiState.error,
+                    onRetry = onRetry
                 )
             }
 
@@ -125,7 +148,9 @@ private fun LoadingState() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(
+                modifier = Modifier.testTag("loading_indicator")
+            )
             Text(
                 text = "Загрузка категорий...",
                 style = MaterialTheme.typography.bodyMedium,
@@ -155,7 +180,9 @@ private fun ErrorState(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier
+                    .padding(16.dp)
+                    .testTag("error_message")
             )
 
             Button(
@@ -180,7 +207,9 @@ private fun EmptyState() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .padding(16.dp)
+                .testTag("empty_state")
         )
     }
 }
@@ -224,6 +253,101 @@ fun CategoriesScreenPreview() {
                     onCategoryClick = { _, _, _ -> }
                 )
             }
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Loading State")
+@Composable
+fun CategoriesContentLoadingPreview() {
+    RecipesAppTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            CategoriesContent(
+                uiState = CategoriesUiState(isLoading = true),
+                onCategoryClick = { _, _, _ -> }
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Error State")
+@Composable
+fun CategoriesContentErrorPreview() {
+    RecipesAppTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            CategoriesContent(
+                uiState = CategoriesUiState(
+                    error = "Ошибка загрузки категорий",
+                    isEmpty = true
+                ),
+                onCategoryClick = { _, _, _ -> },
+                onRetry = {}
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Empty State")
+@Composable
+fun CategoriesContentEmptyPreview() {
+    RecipesAppTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            CategoriesContent(
+                uiState = CategoriesUiState(isEmpty = true),
+                onCategoryClick = { _, _, _ -> }
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Success State")
+@Composable
+fun CategoriesContentSuccessPreview() {
+    RecipesAppTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            val mockCategories = listOf(
+                CategoryUiModel(
+                    id = 1,
+                    title = "Бургеры",
+                    description = "Рецепты всех популярных видов бургеров",
+                    imageUrl = ""
+                ),
+                CategoryUiModel(
+                    id = 2,
+                    title = "Десерты",
+                    description = "Самые вкусные рецепты десертов",
+                    imageUrl = ""
+                ),
+                CategoryUiModel(
+                    id = 3,
+                    title = "Салаты",
+                    description = "Легкие и полезные салаты",
+                    imageUrl = ""
+                ),
+                CategoryUiModel(
+                    id = 4,
+                    title = "Супы",
+                    description = "Горячие первые блюда",
+                    imageUrl = ""
+                )
+            )
+
+            CategoriesContent(
+                uiState = CategoriesUiState(categories = mockCategories),
+                onCategoryClick = { _, _, _ -> }
+            )
         }
     }
 }
