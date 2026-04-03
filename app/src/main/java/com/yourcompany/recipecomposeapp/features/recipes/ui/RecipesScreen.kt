@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -29,6 +30,7 @@ import com.yourcompany.recipecomposeapp.core.ui.ScreenHeader
 import com.yourcompany.recipecomposeapp.core.ui.components.ingredients.presentation.model.IngredientUiModel
 import com.yourcompany.recipecomposeapp.features.recipes.presentation.RecipesViewModel
 import com.yourcompany.recipecomposeapp.features.recipes.presentation.model.RecipeUiModel
+import com.yourcompany.recipecomposeapp.features.recipes.presentation.model.RecipesUiState
 import com.yourcompany.recipecomposeapp.ui.theme.RecipesAppTheme
 
 @Composable
@@ -39,6 +41,28 @@ fun RecipesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+    RecipesContent(
+        uiState = uiState,
+        onRecipeClick = onRecipeClick,
+        onRetry = { viewModel.retry() },
+        modifier = modifier
+    )
+}
+
+/**
+ * Stateless composable для тестирования UI экрана рецептов
+ * @param uiState Состояние UI для отображения
+ * @param onRecipeClick Callback при клике на рецепт
+ * @param onRetry Callback при повторной попытке загрузки
+ * @param modifier Модификатор
+ */
+@Composable
+fun RecipesContent(
+    uiState: RecipesUiState,
+    onRecipeClick: (Int) -> Unit,
+    onRetry: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -59,7 +83,7 @@ fun RecipesScreen(
             uiState.hasError -> {
                 ErrorState(
                     errorMessage = uiState.errorMessage ?: "Неизвестная ошибка",
-                    onRetry = viewModel::retry
+                    onRetry = onRetry
                 )
             }
 
@@ -122,7 +146,9 @@ private fun LoadingState() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            CircularProgressIndicator()
+            CircularProgressIndicator(
+                modifier = Modifier.testTag("loading_indicator")
+            )
             Text(
                 text = "Загрузка рецептов...",
                 style = MaterialTheme.typography.bodyMedium,
@@ -133,7 +159,10 @@ private fun LoadingState() {
 }
 
 @Composable
-private fun ErrorState(errorMessage: String, onRetry: () -> Unit) {
+private fun ErrorState(
+    errorMessage: String,
+    onRetry: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -149,7 +178,8 @@ private fun ErrorState(errorMessage: String, onRetry: () -> Unit) {
                 text = errorMessage,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.testTag("error_message")
             )
             Button(onClick = onRetry) {
                 Text("Повторить")
@@ -171,22 +201,83 @@ private fun EmptyState() {
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .padding(16.dp)
+                .testTag("empty_state")
         )
     }
 }
 
-@Preview(showBackground = true)
+// ==================== PREVIEWS ====================
+
+@Preview(showBackground = true, name = "Recipes Screen - Loading State")
 @Composable
-fun RecipesScreenPreview() {
-    // Для превью создаем заглушку ViewModel
-    // В реальном приложении ViewModel будет передана из RecipesApp
+fun RecipesScreenLoadingPreview() {
     RecipesAppTheme {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            // Создаем моковые данные для превью
+            RecipesContent(
+                uiState = RecipesUiState(
+                    isLoading = true,
+                    categoryTitle = "Бургеры"
+                ),
+                onRecipeClick = { }
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Recipes Screen - Error State")
+@Composable
+fun RecipesScreenErrorPreview() {
+    RecipesAppTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            RecipesContent(
+                uiState = RecipesUiState(
+                    errorMessage = "Не удалось загрузить рецепты. Проверьте подключение к интернету.",
+                    isLoading = false,
+                    categoryTitle = "Бургеры"
+                ),
+                onRecipeClick = { },
+                onRetry = { }
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Recipes Screen - Empty State")
+@Composable
+fun RecipesScreenEmptyPreview() {
+    RecipesAppTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            RecipesContent(
+                uiState = RecipesUiState(
+                    recipes = emptyList(),
+                    isLoading = false,
+                    categoryTitle = "Бургеры"
+                ),
+                onRecipeClick = { }
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Recipes Screen - Success State")
+@Composable
+fun RecipesScreenSuccessPreview() {
+    RecipesAppTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
             val mockRecipes = listOf(
                 RecipeUiModel(
                     id = 1,
@@ -194,29 +285,130 @@ fun RecipesScreenPreview() {
                     imageUrl = "",
                     ingredients = listOf(
                         IngredientUiModel("Говяжий фарш", "500 г"),
-                        IngredientUiModel("Булочка", "2 шт")
+                        IngredientUiModel("Булочка для бургера", "2 шт"),
+                        IngredientUiModel("Сыр Чеддер", "200 г"),
+                        IngredientUiModel("Помидор", "1 шт"),
+                        IngredientUiModel("Салат Айсберг", "50 г"),
+                        IngredientUiModel("Огурцы маринованные", "4 шт"),
+                        IngredientUiModel("Кетчуп и горчица", "по вкусу")
                     ),
-                    method = listOf("1. Приготовить", "2. Подавать"),
+                    method = listOf(
+                        "1. Сформируйте котлеты из фарша, посолите и поперчите",
+                        "2. Обжарьте котлеты на сковороде до золотистой корочки по 3-4 минуты с каждой стороны",
+                        "3. Поджарьте булочки на гриле или сухой сковороде",
+                        "4. Соберите бургер: нижняя булочка, котлета, сыр, овощи, соус, верхняя булочка"
+                    ),
+                    servings = 4
+                ),
+                RecipeUiModel(
+                    id = 2,
+                    title = "Чизбургер",
+                    imageUrl = "",
+                    ingredients = listOf(
+                        IngredientUiModel("Говяжий фарш", "500 г"),
+                        IngredientUiModel("Булочка для бургера", "2 шт"),
+                        IngredientUiModel("Сыр Чеддер", "4 ломтика"),
+                        IngredientUiModel("Лук репчатый", "1 шт"),
+                        IngredientUiModel("Соус для бургера", "4 ст.л.")
+                    ),
+                    method = listOf(
+                        "1. Приготовьте котлеты из фарша",
+                        "2. Обжарьте лук до золотистого цвета",
+                        "3. Соберите бургер с сыром и луком"
+                    ),
+                    servings = 2
+                ),
+                RecipeUiModel(
+                    id = 3,
+                    title = "Вегетарианский бургер",
+                    imageUrl = "",
+                    ingredients = listOf(
+                        IngredientUiModel("Котлета из нута", "4 шт"),
+                        IngredientUiModel("Булочка с кунжутом", "4 шт"),
+                        IngredientUiModel("Авокадо", "1 шт"),
+                        IngredientUiModel("Помидоры черри", "8 шт"),
+                        IngredientUiModel("Руккола", "50 г")
+                    ),
+                    method = listOf(
+                        "1. Разогрейте котлеты на сковороде",
+                        "2. Нарежьте авокадо и помидоры",
+                        "3. Соберите бургер с зеленью и овощами"
+                    ),
                     servings = 4
                 )
             )
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-            ) {
-                ScreenHeader(
-                    header = "Бургеры",
-                    imageUrl = "",
-                    imageRes = R.drawable.bcg_categories
-                )
-
-                RecipesList(
+            RecipesContent(
+                uiState = RecipesUiState(
                     recipes = mockRecipes,
-                    onRecipeClick = { }
+                    isLoading = false,
+                    categoryTitle = "БУРГЕРЫ",
+                    categoryImageUrl = "https://example.com/burgers.jpg"
+                ),
+                onRecipeClick = { recipeId -> }
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Recipes Screen - Long List")
+@Composable
+fun RecipesScreenLongListPreview() {
+    RecipesAppTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            val longRecipesList = (1..20).map { index ->
+                RecipeUiModel(
+                    id = index,
+                    title = "Рецепт №$index",
+                    imageUrl = "",
+                    ingredients = emptyList(),
+                    method = emptyList(),
+                    servings = 2
                 )
             }
+
+            RecipesContent(
+                uiState = RecipesUiState(
+                    recipes = longRecipesList,
+                    isLoading = false,
+                    categoryTitle = "ПОПУЛЯРНЫЕ РЕЦЕПТЫ"
+                ),
+                onRecipeClick = { }
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Recipes Screen - With Long Category Title")
+@Composable
+fun RecipesScreenLongTitlePreview() {
+    RecipesAppTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            val mockRecipes = listOf(
+                RecipeUiModel(
+                    id = 1,
+                    title = "Тестовый рецепт",
+                    imageUrl = "",
+                    ingredients = emptyList(),
+                    method = emptyList(),
+                    servings = 1
+                )
+            )
+
+            RecipesContent(
+                uiState = RecipesUiState(
+                    recipes = mockRecipes,
+                    isLoading = false,
+                    categoryTitle = "Очень длинное название категории, которое может не поместиться в одну строку"
+                ),
+                onRecipeClick = { }
+            )
         }
     }
 }
