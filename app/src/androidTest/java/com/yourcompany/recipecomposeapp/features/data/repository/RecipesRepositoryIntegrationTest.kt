@@ -10,15 +10,12 @@ import com.yourcompany.recipecomposeapp.data.database.RecipesDatabase
 import com.yourcompany.recipecomposeapp.data.database.entity.CategoryEntity
 import com.yourcompany.recipecomposeapp.data.model.CategoryDto
 import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryImpl
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -50,12 +47,8 @@ class RecipesRepositoryIntegrationTest {
     private lateinit var apiService: RecipesApiService
     private lateinit var repository: RecipesRepositoryImpl
 
-    private val testDispatcher = StandardTestDispatcher()
-
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
-
         val context = ApplicationProvider.getApplicationContext<Context>()
 
         database = Room.inMemoryDatabaseBuilder(context, RecipesDatabase::class.java)
@@ -72,18 +65,23 @@ class RecipesRepositoryIntegrationTest {
             .build()
 
         apiService = retrofit.create(RecipesApiService::class.java)
-        repository = RecipesRepositoryImpl(apiService, database)
+
     }
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         database.close()
         mockWebServer.shutdown()
     }
 
     @Test
     fun savesDataToCacheAfterSuccessfulApiCall() = runTest {
+        repository = RecipesRepositoryImpl(
+            apiService = apiService,
+            database = database,
+            externalScope = CoroutineScope(this.coroutineContext)
+        )
+
         val expectedCategories = listOf(
             CategoryDto(1, "Завтраки", "Лёгкие завтраки", "breakfast.jpg"),
             CategoryDto(2, "Обеды", "Сытные обеды", "lunch.jpg")
@@ -116,6 +114,12 @@ class RecipesRepositoryIntegrationTest {
 
     @Test
     fun returnsCachedDataWhenApiFails() = runTest {
+        repository = RecipesRepositoryImpl(
+            apiService = apiService,
+            database = database,
+            externalScope = CoroutineScope(this.coroutineContext)
+        )
+
         val cachedCategories = listOf(
             CategoryEntity(1, "Кешированные завтраки", "Описание", "img1.jpg"),
             CategoryEntity(2, "Кешированные обеды", "Описание", "img2.jpg")
@@ -129,6 +133,8 @@ class RecipesRepositoryIntegrationTest {
         )
 
         val resultFlow = repository.getCategories()
+
+        advanceUntilIdle()
 
         val result = resultFlow.first()
         assertEquals(2, result.size)

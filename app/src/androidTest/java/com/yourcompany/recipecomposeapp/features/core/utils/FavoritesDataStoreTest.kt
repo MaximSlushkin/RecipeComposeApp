@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.cash.turbine.test
 import com.yourcompany.recipecomposeapp.core.utils.FavoriteDataStoreManager
 import com.yourcompany.recipecomposeapp.core.utils.dataStore
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.*
@@ -27,9 +28,11 @@ class FavoritesDataStoreTest {
     }
 
     @After
-    fun tearDown() = runTest {
-        context.dataStore.edit { preferences ->
-            preferences.clear()
+    fun tearDown() {
+        runBlocking {
+            context.dataStore.edit { preferences ->
+                preferences.clear()
+            }
         }
     }
 
