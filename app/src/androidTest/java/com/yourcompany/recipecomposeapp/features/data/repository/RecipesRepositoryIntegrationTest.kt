@@ -13,7 +13,7 @@ import com.yourcompany.recipecomposeapp.data.repository.RecipesRepositoryImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -47,6 +47,8 @@ class RecipesRepositoryIntegrationTest {
     private lateinit var apiService: RecipesApiService
     private lateinit var repository: RecipesRepositoryImpl
 
+    private val testDispatcher = StandardTestDispatcher()
+
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
@@ -65,7 +67,6 @@ class RecipesRepositoryIntegrationTest {
             .build()
 
         apiService = retrofit.create(RecipesApiService::class.java)
-
     }
 
     @After
@@ -75,11 +76,11 @@ class RecipesRepositoryIntegrationTest {
     }
 
     @Test
-    fun savesDataToCacheAfterSuccessfulApiCall() = runTest {
+    fun savesDataToCacheAfterSuccessfulApiCall() = runTest(testDispatcher) {
         repository = RecipesRepositoryImpl(
             apiService = apiService,
             database = database,
-            externalScope = CoroutineScope(this.coroutineContext)
+            externalScope = CoroutineScope(testDispatcher)  // ← ключевое изменение!
         )
 
         val expectedCategories = listOf(
@@ -113,11 +114,11 @@ class RecipesRepositoryIntegrationTest {
     }
 
     @Test
-    fun returnsCachedDataWhenApiFails() = runTest {
+    fun returnsCachedDataWhenApiFails() = runTest(testDispatcher) {
         repository = RecipesRepositoryImpl(
             apiService = apiService,
             database = database,
-            externalScope = CoroutineScope(this.coroutineContext)
+            externalScope = CoroutineScope(testDispatcher)
         )
 
         val cachedCategories = listOf(
