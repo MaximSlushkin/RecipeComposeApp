@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,7 +34,8 @@ fun CategoryItem(
         modifier = Modifier
             .clickable { onClick() }
             .height(220.dp)
-            .width(156.dp),
+            .width(156.dp)
+            .testTag("category_item"),
         shape = RoundedCornerShape(
             size = dimensionResource(R.dimen.halfBasicCornerRadius)
         ),

@@ -144,6 +144,13 @@ dependencies {
 
     // Hilt compiler для androidTest
     kspAndroidTest(libs.hilt.compiler)
+
+    androidTestImplementation(libs.kaspresso)
+    androidTestImplementation(libs.kaspresso.compose)
+
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.core)
 }
 
 configurations.all {

@@ -67,6 +67,7 @@ fun RecipesContent(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .testTag("recipes_screen")
     ) {
         ScreenHeader(
             header = uiState.categoryTitle,
@@ -109,7 +110,8 @@ private fun RecipesList(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.background)
+            .testTag("recipes_list"),
         contentPadding = PaddingValues(
             vertical = dimensionResource(R.dimen.mainPadding)
         ),
@@ -207,8 +209,6 @@ private fun EmptyState() {
         )
     }
 }
-
-// ==================== PREVIEWS ====================
 
 @Preview(showBackground = true, name = "Recipes Screen - Loading State")
 @Composable
