@@ -71,6 +71,17 @@ android {
             isReturnDefaultValues = true
         }
     }
+
+    packaging {
+        resources {
+            excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/LICENSE-notice.md"
+            excludes += "META-INF/AL2.0"
+            excludes += "META-INF/LGPL2.1"
+            excludes += "META-INF/*.version"
+            excludes += "META-INF/DEPENDENCIES"
+        }
+    }
 }
 
 
@@ -123,6 +134,16 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    // Интеграционные тесты (androidTest)
+    androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.hilt.android.testing)
+    androidTestImplementation(libs.mockwebserver)
+    androidTestImplementation(libs.coroutines.test)
+    androidTestImplementation(libs.turbine)
+
+    // Hilt compiler для androidTest
+    kspAndroidTest(libs.hilt.compiler)
 }
 
 configurations.all {

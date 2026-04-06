@@ -23,7 +23,8 @@ import javax.inject.Singleton
 @Singleton
 class RecipesRepositoryImpl @Inject constructor(
     private val apiService: RecipesApiService,
-    private val database: RecipesDatabase
+    private val database: RecipesDatabase,
+    private val externalScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) : RecipesRepository {
 
     private companion object {
@@ -36,8 +37,6 @@ class RecipesRepositoryImpl @Inject constructor(
     private val recipesCache = mutableMapOf<Int, List<RecipeDto>>()
     private val cacheMutex = Mutex()
     private var categoriesCache: List<CategoryDto>? = null
-
-    private val refreshScope = CoroutineScope(Dispatchers.IO)
 
     override suspend fun forceLoadRecipe(recipeId: Int): RecipeDto? {
         return withContext(Dispatchers.IO) {
@@ -89,7 +88,7 @@ class RecipesRepositoryImpl @Inject constructor(
 
     override fun getCategories(): Flow<List<CategoryDto>> {
 
-        refreshScope.launch {
+        externalScope.launch {
             try {
                 Log.d(TAG, "Запуск фонового обновления категорий из API")
                 val freshCategories = apiService.getCategories()
@@ -114,7 +113,7 @@ class RecipesRepositoryImpl @Inject constructor(
 
     override fun getRecipesByCategory(categoryId: Int): Flow<List<RecipeDto>> {
 
-        refreshScope.launch {
+        externalScope.launch {
             try {
                 Log.d(TAG, "Запуск фонового обновления рецептов для категории $categoryId")
                 val freshRecipes = apiService.getRecipesByCategory(categoryId)
@@ -140,7 +139,7 @@ class RecipesRepositoryImpl @Inject constructor(
     }
 
     override fun getRecipe(recipeId: Int): Flow<RecipeDto?> {
-        refreshScope.launch {
+        externalScope.launch {
             try {
                 val existingEntity = recipeDao.getRecipeByIdSync(recipeId)
 
