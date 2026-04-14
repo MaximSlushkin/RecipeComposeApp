@@ -3,9 +3,9 @@ name: Android CI
 # Запуск при push и pull request в основную ветку (main)
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "master" ]
 
 # Отмена предыдущих запусков для той же ветки/PR (экономит ресурсы)
 concurrency:
