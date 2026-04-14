@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,7 +31,8 @@ fun RecipeItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onClick(recipe.id) },
+            .clickable { onClick(recipe.id) }
+            .testTag("recipe_item"),
         shape = RoundedCornerShape(
             size = dimensionResource(R.dimen.basicCornerRadius)
         ),

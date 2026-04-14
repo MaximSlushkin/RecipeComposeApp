@@ -80,7 +80,8 @@ class RecipesRepositoryIntegrationTest {
         repository = RecipesRepositoryImpl(
             apiService = apiService,
             database = database,
-            externalScope = CoroutineScope(testDispatcher)
+            externalScope = CoroutineScope(testDispatcher),
+            ioDispatcher = testDispatcher
         )
 
         val expectedCategories = listOf(

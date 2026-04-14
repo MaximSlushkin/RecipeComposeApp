@@ -48,13 +48,6 @@ fun CategoriesScreen(
     )
 }
 
-/**
- * Stateless composable для тестирования UI экрана категорий
- * @param uiState Состояние UI для отображения
- * @param onCategoryClick Callback при клике на категорию
- * @param onRetry Callback при повторной попытке загрузки
- * @param modifier Модификатор
- */
 @Composable
 fun CategoriesContent(
     uiState: CategoriesUiState,
@@ -66,6 +59,7 @@ fun CategoriesContent(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .testTag("categories_screen")
     ) {
         ScreenHeader(
             header = "Категории",
@@ -110,6 +104,7 @@ private fun CategoriesGrid(
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
+        modifier = Modifier.testTag("categories_grid"),
         horizontalArrangement = Arrangement.spacedBy(
             dimensionResource(R.dimen.mainPadding)
         ),

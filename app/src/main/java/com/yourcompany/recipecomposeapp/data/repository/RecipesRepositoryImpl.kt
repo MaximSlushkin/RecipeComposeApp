@@ -9,6 +9,7 @@ import com.yourcompany.recipecomposeapp.data.model.CategoryDto
 import com.yourcompany.recipecomposeapp.data.model.RecipeDto
 import com.yourcompany.recipecomposeapp.data.model.toDto
 import com.yourcompany.recipecomposeapp.data.model.toEntity
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -24,7 +25,8 @@ import javax.inject.Singleton
 class RecipesRepositoryImpl @Inject constructor(
     private val apiService: RecipesApiService,
     private val database: RecipesDatabase,
-    private val externalScope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+    private val externalScope: CoroutineScope = CoroutineScope(Dispatchers.IO),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : RecipesRepository {
 
     private companion object {
@@ -39,7 +41,7 @@ class RecipesRepositoryImpl @Inject constructor(
     private var categoriesCache: List<CategoryDto>? = null
 
     override suspend fun forceLoadRecipe(recipeId: Int): RecipeDto? {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             try {
                 Log.d(TAG, "Принудительная загрузка рецепта $recipeId из API")
 
@@ -93,7 +95,7 @@ class RecipesRepositoryImpl @Inject constructor(
                 Log.d(TAG, "Запуск фонового обновления категорий из API")
                 val freshCategories = apiService.getCategories()
 
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
 
                     val categoryEntities = freshCategories.map { it.toEntity() }
                     categoryDao.insertCategories(categoryEntities)
@@ -118,7 +120,7 @@ class RecipesRepositoryImpl @Inject constructor(
                 Log.d(TAG, "Запуск фонового обновления рецептов для категории $categoryId")
                 val freshRecipes = apiService.getRecipesByCategory(categoryId)
 
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
 
                     val recipeEntities = freshRecipes.map { it.toEntity(categoryId) }
                     recipeDao.insertRecipes(recipeEntities)
@@ -165,7 +167,7 @@ class RecipesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getRecipeSync(recipeId: Int): RecipeDto? {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             val entity = recipeDao.getRecipeByIdSync(recipeId)
             entity?.toDto()
         }
@@ -198,7 +200,7 @@ class RecipesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun clearCache() {
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             categoryDao.deleteAllCategories()
             recipeDao.deleteAllRecipes()
 

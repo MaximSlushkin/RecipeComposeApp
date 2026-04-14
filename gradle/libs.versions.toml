@@ -25,6 +25,9 @@ mockk = "1.13.9"
 coroutines-test = "1.7.3"
 turbine = "1.0.0"
 uiTestJunit4 = "1.10.6"
+kaspresso = "1.5.3"
+testRunner = "1.5.0"
+androidxTestCore = "1.5.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -71,6 +74,11 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "okhttp" }
 room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 hilt-android-testing = { module = "com.google.dagger:hilt-android-testing", version.ref = "hilt" }
+kaspresso = { module = "com.kaspersky.android-components:kaspresso", version.ref = "kaspresso" }
+kaspresso-compose = { module = "com.kaspersky.android-components:kaspresso-compose-support", version.ref = "kaspresso" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "testRunner" }
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "testRunner" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidxTestCore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
